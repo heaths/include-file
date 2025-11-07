@@ -22,7 +22,7 @@ use proc_macro::TokenStream;
 /// ````markdown
 /// ```rust example
 /// let m = example()?;
-/// println!("{m:#?}");
+/// assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 /// ```
 /// ````
 ///
