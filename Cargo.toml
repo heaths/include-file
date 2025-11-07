@@ -20,3 +20,6 @@ syn = "2.0.109"
 
 [dev-dependencies]
 quote = "1.0.42"
+
+[lints.clippy]
+test_attr_in_doctest = "allow"

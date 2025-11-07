@@ -1,6 +1,8 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
+#![doc = include_str!("../README.md")]
+
 extern crate proc_macro;
 mod code;
 
@@ -20,7 +22,7 @@ use proc_macro::TokenStream;
 /// ````markdown
 /// ```rust example
 /// let m = example()?;
-/// println!("{m:#?}");
+/// assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 /// ```
 /// ````
 ///
