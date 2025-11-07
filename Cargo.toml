@@ -1,8 +1,11 @@
 [package]
 name = "include-file"
-version = "0.1.0"
+version = "0.1.1"
 description = "Include sections of files into Rust source code"
+readme = "README.md"
 authors = ["Heath Stewart (https://github.com/heaths)"]
+keywords = ["include", "macro", "markdown"]
+categories = ["development-tools::build-utils", "development-tools::testing"]
 edition = "2021"
 rust-version = "1.85.0"
 repository = "https://github.com/heaths/include-file"
