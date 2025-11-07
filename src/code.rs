@@ -13,10 +13,15 @@ use syn::{
 };
 
 pub fn include_code(item: TokenStream) -> syn::Result<TokenStream> {
-    let args: CodeArgs = parse2(item)?;
-    let file = open(&args.path.value()).map_err(|err| syn::Error::new(Span::call_site(), err))?;
+    let args: CodeArgs = parse2(item).map_err(|_| {
+        syn::Error::new(
+            Span::call_site(),
+            "expected (path, name) literal string arguments",
+        )
+    })?;
+    let file = open(&args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
     let content =
-        extract(file, &args.name.value()).map_err(|err| syn::Error::new(Span::call_site(), err))?;
+        extract(file, &args.name.value()).map_err(|err| syn::Error::new(args.name.span(), err))?;
 
     Ok(content.parse()?)
 }
@@ -128,7 +133,7 @@ fn extract<R: io::Read>(buffer: R, name: &str) -> io::Result<String> {
     if lines.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("code fence with name '{}' not found", name),
+            format!("code fence '{}' not found", name),
         ));
     }
 
