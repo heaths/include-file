@@ -1,0 +1,19 @@
+[package]
+name = "include-file"
+version = "0.1.0"
+description = "Include sections of files into Rust source code"
+authors = ["Heath Stewart (https://github.com/heaths)"]
+edition = "2021"
+rust-version = "1.85.0"
+repository = "https://github.com/heaths/include-file"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.103"
+syn = "2.0.109"
+
+[dev-dependencies]
+quote = "1.0.42"
