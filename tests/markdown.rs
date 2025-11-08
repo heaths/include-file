@@ -1,11 +1,11 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
-use include_file::include_code;
+use include_file::include_markdown;
 
 #[test]
 fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-    include_code!("../README.md", "example");
+    include_markdown!("../README.md", "example");
     Ok(())
 }
 

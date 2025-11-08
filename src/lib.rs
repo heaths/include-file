@@ -4,7 +4,7 @@
 #![doc = include_str!("../README.md")]
 
 extern crate proc_macro;
-mod code;
+mod markdown;
 
 use proc_macro::TokenStream;
 
@@ -41,13 +41,13 @@ use proc_macro::TokenStream;
 ///
 /// #[test]
 /// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-///     include_code!("../README.md", "example");
+///     include_markdown!("../README.md", "example");
 ///     Ok(())
 /// }
 /// ```
 #[proc_macro]
-pub fn include_code(item: TokenStream) -> TokenStream {
-    code::include_code(item.into())
+pub fn include_markdown(item: TokenStream) -> TokenStream {
+    markdown::include_markdown(item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
