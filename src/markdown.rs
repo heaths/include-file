@@ -12,8 +12,8 @@ use syn::{
     parse2, LitStr, Token,
 };
 
-pub fn include_code(item: TokenStream) -> syn::Result<TokenStream> {
-    let args: CodeArgs = parse2(item).map_err(|_| {
+pub fn include_markdown(item: TokenStream) -> syn::Result<TokenStream> {
+    let args: MarkdownArgs = parse2(item).map_err(|_| {
         syn::Error::new(
             Span::call_site(),
             "expected (path, name) literal string arguments",
@@ -26,15 +26,15 @@ pub fn include_code(item: TokenStream) -> syn::Result<TokenStream> {
     Ok(content.parse()?)
 }
 
-struct CodeArgs {
+struct MarkdownArgs {
     path: LitStr,
     _sep: Token![,],
     name: LitStr,
 }
 
-impl fmt::Debug for CodeArgs {
+impl fmt::Debug for MarkdownArgs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("CodeArgs")
+        f.debug_struct("MarkdownArgs")
             .field("path", &self.path.value())
             .field("_sep", &",")
             .field("name", &self.name.value())
@@ -42,7 +42,7 @@ impl fmt::Debug for CodeArgs {
     }
 }
 
-impl Parse for CodeArgs {
+impl Parse for MarkdownArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
             path: input.parse()?,
@@ -159,9 +159,9 @@ mod tests {
     #[test]
     fn parse_two_args() {
         let tokens = quote! { "../README.md", "example" };
-        include_code(tokens.clone()).expect("expected TokenStream");
+        include_markdown(tokens.clone()).expect("expected TokenStream");
 
-        let args: CodeArgs = parse2(tokens).expect("expected parse2");
+        let args: MarkdownArgs = parse2(tokens).expect("expected parse2");
         assert_eq!(args.path.value(), "../README.md");
         assert_eq!(args.name.value(), "example");
     }
@@ -169,25 +169,25 @@ mod tests {
     #[test]
     fn parse_no_args_err() {
         let tokens = TokenStream::new();
-        include_code(tokens).expect_err("expected parse error");
+        include_markdown(tokens).expect_err("expected parse error");
     }
 
     #[test]
     fn parse_one_args_err() {
         let tokens = quote! { "../README.md" };
-        include_code(tokens).expect_err("expected parse error");
+        include_markdown(tokens).expect_err("expected parse error");
     }
 
     #[test]
     fn parse_three_args_err() {
         let tokens = quote! { "../README.md", "example", "other" };
-        include_code(tokens).expect_err("expected parse error");
+        include_markdown(tokens).expect_err("expected parse error");
     }
 
     #[test]
     fn parse_no_sep_err() {
         let tokens = quote! { "../README.md" "example" };
-        include_code(tokens).expect_err("expected parse error");
+        include_markdown(tokens).expect_err("expected parse error");
     }
 
     #[test]
