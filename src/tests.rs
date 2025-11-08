@@ -1,8 +1,58 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
-use super::{extract, open};
+use super::{include_file, open, MarkdownArgs};
+use proc_macro2::TokenStream;
+use quote::quote;
 use std::io;
+use syn::parse2;
+
+fn collect<R: io::Read>(
+    _name: &str,
+    _iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<Vec<String>> {
+    Ok(vec![r#"println!("example");"#.into()])
+}
+
+#[test]
+fn parse_two_args() {
+    let tokens = quote! { "../README.md", "example" };
+    include_file(tokens.clone(), collect).expect("expected TokenStream");
+
+    let args: MarkdownArgs = parse2(tokens).expect("expected parse2");
+    assert_eq!(args.path.value(), "../README.md");
+    assert_eq!(args.name.value(), "example");
+}
+
+#[test]
+fn parse_no_args_err() {
+    let tokens = TokenStream::new();
+    include_file(tokens, collect).expect_err("expected parse error");
+}
+
+#[test]
+fn parse_one_args_err() {
+    let tokens = quote! { "../README.md" };
+    include_file(tokens, collect).expect_err("expected parse error");
+}
+
+#[test]
+fn parse_three_args_err() {
+    let tokens = quote! { "../README.md", "example", "other" };
+    include_file(tokens, collect).expect_err("expected parse error");
+}
+
+#[test]
+fn parse_no_sep_err() {
+    let tokens = quote! { "../README.md" "example" };
+    include_file(tokens, collect).expect_err("expected parse error");
+}
+
+#[test]
+fn parse_semicolon_sep_err() {
+    let tokens = quote! { "../README.md"; "example" };
+    include_file(tokens, collect).expect_err("expected parse error");
+}
 
 #[test]
 fn open_file() {
@@ -13,170 +63,4 @@ fn open_file() {
 #[test]
 fn open_err() {
     assert!(matches!(open("missing.txt"), Err(err) if err.kind() == io::ErrorKind::NotFound));
-}
-
-#[test]
-fn extract_no_code_fences() {
-    let content = r#"This is a markdown file
-with no code fences at all.
-Just plain text."#;
-    let result = extract(content.as_bytes(), "example");
-    assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
-}
-
-#[test]
-fn extract_no_matching_name() {
-    let content = r#"Some text here.
-
-```rust
-fn main() {
-    println!("Hello");
-}
-```
-
-More text."#;
-    let result = extract(content.as_bytes(), "example");
-    assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
-}
-
-#[test]
-fn extract_multiple_fences_one_match() {
-    let content = r#"Here's the first fence:
-
-```javascript
-console.log("Not this one");
-```
-
-And here's the one we want:
-
-~~~rust example
-fn main() {
-    println!("Hello, world!");
-}
-~~~
-
-And another one:
-
-```python
-print("Also not this one")
-```"#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"fn main() {
-    println!("Hello, world!");
-}"#
-    );
-}
-
-#[test]
-fn extract_nested_code_fence() {
-    let content = r#"Outer content:
-
-````markdown example
-# Example
-
-Here's a nested code fence:
-
-```rust
-fn nested() {
-    println!("Inner code");
-}
-```
-
-More content.
-````
-
-After the fence."#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"# Example
-
-Here's a nested code fence:
-
-```rust
-fn nested() {
-    println!("Inner code");
-}
-```
-
-More content."#
-    );
-}
-
-#[test]
-fn extract_with_indentation() {
-    let content = r#"Normal text.
-
-  ~~~rust example
-  fn indented() {
-      println!("Indented code");
-  }
-  ~~~
-
-More text."#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"fn indented() {
-    println!("Indented code");
-}"#
-    );
-}
-
-#[test]
-fn extract_backticks_with_name() {
-    let content = r#"Text before.
-
-```rust example
-let x = 42;
-let y = x + 1;
-```
-
-Text after."#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"let x = 42;
-let y = x + 1;"#
-    );
-}
-
-#[test]
-fn extract_tildes_with_name() {
-    let content = r#"Text before.
-
-~~~python example
-def hello():
-    print("Hello")
-~~~
-
-Text after."#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"def hello():
-    print("Hello")"#
-    );
-}
-
-#[test]
-fn extract_more_closing_chars() {
-    let content = r#"Text before.
-
-```rust example
-fn test() {
-    println!("test");
-}
-`````
-
-Text after."#;
-    let result = extract(content.as_bytes(), "example").expect("expected content");
-    assert_eq!(
-        result,
-        r#"fn test() {
-    println!("test");
-}"#
-    );
 }
