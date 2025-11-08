@@ -4,7 +4,7 @@
 use include_file::include_markdown;
 
 #[test]
-fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     include_markdown!("../README.md", "example");
     Ok(())
 }
