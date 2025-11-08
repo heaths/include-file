@@ -7,6 +7,7 @@ mod markdown;
 #[cfg(test)]
 mod tests;
 
+use proc_macro2::{Span, TokenStream};
 use std::{
     fmt, fs,
     io::{self, BufRead},
@@ -14,7 +15,7 @@ use std::{
 };
 use syn::{
     parse::{Parse, ParseStream},
-    LitStr, Token,
+    parse2, LitStr, Token,
 };
 
 /// Include code from within a code fence in a markdown file.
@@ -84,6 +85,23 @@ impl Parse for MarkdownArgs {
     }
 }
 
+fn include_file<F>(item: TokenStream, f: F) -> syn::Result<TokenStream>
+where
+    F: FnOnce(&str, io::Lines<io::BufReader<fs::File>>) -> io::Result<Vec<String>>,
+{
+    let args: MarkdownArgs = parse2(item).map_err(|_| {
+        syn::Error::new(
+            Span::call_site(),
+            "expected (path, name) literal string arguments",
+        )
+    })?;
+    let file = open(&args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
+    let content = extract(file, &args.name.value(), f)
+        .map_err(|err| syn::Error::new(args.name.span(), err))?;
+
+    Ok(content.parse()?)
+}
+
 fn open(path: &str) -> io::Result<fs::File> {
     let file_path = PathBuf::from(file!());
     let path = file_path
@@ -98,70 +116,13 @@ fn open(path: &str) -> io::Result<fs::File> {
     fs::File::open(path)
 }
 
-fn extract<R: io::Read>(buffer: R, name: &str) -> io::Result<String> {
+fn extract<R, F>(buffer: R, name: &str, f: F) -> io::Result<String>
+where
+    R: io::Read,
+    F: FnOnce(&str, io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>>,
+{
     let reader = io::BufReader::new(buffer);
-    let mut lines = Vec::new();
-    let mut in_fence = false;
-    let mut fence_char = '\0';
-    let mut fence_count = 0;
-    let mut fence_indent = 0;
-
-    for line in reader.lines() {
-        let line = line?;
-
-        if !in_fence {
-            // Look for the start of a code fence
-            let trimmed_start = line.trim_start();
-            let indent = line.len() - trimmed_start.len();
-
-            // Check if line starts with ``` or ~~~
-            let first_char = trimmed_start.chars().next();
-            if first_char == Some('`') || first_char == Some('~') {
-                let fence_ch = first_char.unwrap();
-                let count = trimmed_start.chars().take_while(|&c| c == fence_ch).count();
-
-                if count >= 3 {
-                    // Check if the rest of the line contains the name
-                    let after_fence = &trimmed_start[count..];
-                    if after_fence.contains(name) {
-                        in_fence = true;
-                        fence_char = fence_ch;
-                        fence_count = count;
-                        fence_indent = indent;
-                    }
-                }
-            }
-        } else {
-            // We're inside a fence, check if this line ends the fence
-            let trimmed_start = line.trim_start();
-            let indent = line.len() - trimmed_start.len();
-
-            // Check if this line is the closing fence
-            if indent == fence_indent {
-                let first_char = trimmed_start.chars().next();
-                if first_char == Some(fence_char) {
-                    let count = trimmed_start
-                        .chars()
-                        .take_while(|&c| c == fence_char)
-                        .count();
-                    if count >= fence_count {
-                        // Found the closing fence
-                        break;
-                    }
-                }
-            }
-
-            // Collect the line content, stripping the expected indentation
-            if line.len() >= fence_indent {
-                let content = &line[fence_indent..];
-                lines.push(content.to_string());
-            } else {
-                // Line has less indentation than expected, include as-is
-                lines.push(line);
-            }
-        }
-    }
-
+    let lines = f(name, reader.lines())?;
     if lines.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
