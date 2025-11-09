@@ -2,10 +2,10 @@
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
 use proc_macro2::TokenStream;
-use std::{fs, io};
+use std::{fs, io, path::PathBuf};
 
-pub fn include_markdown(item: TokenStream) -> syn::Result<TokenStream> {
-    super::include_file(item, collect::<fs::File>)
+pub fn include_markdown(item: TokenStream, root: Option<PathBuf>) -> syn::Result<TokenStream> {
+    super::include_file(item, root, collect::<fs::File>)
 }
 
 fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>> {

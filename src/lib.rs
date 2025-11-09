@@ -3,6 +3,8 @@
 
 #![doc = include_str!("../README.md")]
 
+extern crate proc_macro;
+
 mod asciidoc;
 mod markdown;
 #[cfg(test)]
@@ -19,7 +21,7 @@ use syn::{
     parse2, LitStr, Token,
 };
 
-/// Include code from within a source block in an AsciiDoc file.
+/// Include code from within a source block in an AsciiDoc file relative to the crate manifest directory.
 ///
 /// Two arguments are required: a file path relative to the current source file,
 /// and an id defined within the source block attributes as shown below.
@@ -58,12 +60,25 @@ use syn::{
 /// ```
 #[proc_macro]
 pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    asciidoc::include_asciidoc(item.into())
+    asciidoc::include_asciidoc(item.into(), None)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
 
-/// Include code from within a code fence in a Markdown file.
+/// Include code from within a code fence in an AsciiDoc file relative to source file directory that invoked the macro.
+///
+/// Available only with Rust version 1.88.0 or newer.
+/// See [`include_asciidoc`] for complete details.
+#[cfg(span_locations)]
+#[proc_macro]
+pub fn include_relative_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    #[allow(clippy::incompatible_msrv)]
+    asciidoc::include_asciidoc(item.into(), proc_macro::Span::call_site().local_file())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Include code from within a code fence in a Markdown file relative to the crate manifest directory.
 ///
 /// Two arguments are required: a file path relative to the current source file,
 /// and a name defined within the code fence as shown below.
@@ -102,7 +117,20 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// ```
 #[proc_macro]
 pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    markdown::include_markdown(item.into())
+    markdown::include_markdown(item.into(), None)
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Include code from within a code fence in a Markdown file relative to source file directory that invoked the macro.
+///
+/// Available only with Rust version 1.88.0 or newer.
+/// See [`include_markdown`] for complete details.
+#[cfg(span_locations)]
+#[proc_macro]
+pub fn include_relative_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    #[allow(clippy::incompatible_msrv)]
+    markdown::include_markdown(item.into(), proc_macro::Span::call_site().local_file())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
@@ -130,7 +158,7 @@ impl Parse for MarkdownArgs {
     }
 }
 
-fn include_file<F>(item: TokenStream, f: F) -> syn::Result<TokenStream>
+fn include_file<F>(item: TokenStream, root: Option<PathBuf>, f: F) -> syn::Result<TokenStream>
 where
     F: FnOnce(&str, io::Lines<io::BufReader<fs::File>>) -> io::Result<Vec<String>>,
 {
@@ -140,18 +168,26 @@ where
             "expected (path, name) literal string arguments",
         )
     })?;
-    let file = open(&args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
+    let file =
+        open(root, &args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
     let content = extract(file, &args.name.value(), f)
         .map_err(|err| syn::Error::new(args.name.span(), err))?;
 
     Ok(content.parse()?)
 }
 
-fn open(path: &str) -> io::Result<fs::File> {
+fn open(root: Option<PathBuf>, path: &str) -> io::Result<fs::File> {
     let manifest_dir: PathBuf = option_env!("CARGO_MANIFEST_DIR")
         .ok_or_else(|| io::Error::other("no manifest directory"))?
         .into();
-    let path = manifest_dir.join(path);
+    let root: PathBuf = match root {
+        Some(path) => path
+            .parent()
+            .map(|dir| manifest_dir.join(dir))
+            .ok_or_else(|| io::Error::other("no source parent directory"))?,
+        None => manifest_dir,
+    };
+    let path = root.join(path);
     fs::File::open(path)
 }
 

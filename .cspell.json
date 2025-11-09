@@ -11,9 +11,11 @@
   ],
   "words": [
     "adoc",
+    "cfgs",
     "clippy",
     "doctest",
     "repr",
+    "rustc",
     "rustlang",
     "rustup"
   ],

@@ -11,6 +11,7 @@ You can demonstrate just the code you want in markdown while maintaining the ben
 ## Examples
 
 The `include_markdown!()` macro resolves a file path relative to the directory containing the crate `Cargo.toml` manifest file.
+When compiled with Rust version 1.88.0 or newer, you can use macros like `include_relative_markdown!()` to resolve file paths relative to the source file directory that invoked the macro.
 
 Consider a crate `README.md` with the following content:
 
