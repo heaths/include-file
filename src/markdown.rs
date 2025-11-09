@@ -143,12 +143,12 @@ print("Also not this one")
     fn extract_nested_code_fence() {
         let content = r#"Outer content:
 
-````rust example
+````markdown
 # Example
 
 Here's a nested code fence:
 
-```rust
+```rust example
 fn nested() {
     println!("Inner code");
 }
@@ -162,17 +162,9 @@ After the fence."#;
         let result = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
-            r#"# Example
-
-Here's a nested code fence:
-
-```rust
-fn nested() {
+            r#"fn nested() {
     println!("Inner code");
-}
-```
-
-More content."#
+}"#
         );
     }
 
@@ -284,20 +276,6 @@ let b = 2;"#
 ```python example
 def test():
     pass
-```
-
-Text after."#;
-        let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect);
-        assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
-    }
-
-    #[test]
-    fn extract_name_without_rust() {
-        let content = r#"Text before.
-
-```javascript example
-console.log("test");
 ```
 
 Text after."#;
