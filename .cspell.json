@@ -10,6 +10,7 @@
     "rust-toolchain.toml"
   ],
   "words": [
+    "adoc",
     "clippy",
     "doctest",
     "repr",
@@ -19,8 +20,9 @@
   "dictionaryDefinitions": [
     {
       "name": "crates",
-      "words": [],
-      "noSuggest": true
+      "words": [
+        "syn",
+      ]
     }
   ],
   "overrides": [
