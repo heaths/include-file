@@ -30,9 +30,11 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
                 let count = trimmed_start.chars().take_while(|&c| c == fence_ch).count();
 
                 if count >= 3 {
-                    // Check if the rest of the line contains the name
+                    // Check if the rest of the line contains "rust" followed by the name
                     let after_fence = &trimmed_start[count..];
-                    if after_fence.contains(name) {
+                    // Check if line starts with optional whitespace followed by "rust"
+                    let trimmed_after = after_fence.trim_start();
+                    if trimmed_after.starts_with("rust") && after_fence.contains(name) {
                         in_fence = true;
                         fence_char = fence_ch;
                         fence_count = count;
@@ -141,7 +143,7 @@ print("Also not this one")
     fn extract_nested_code_fence() {
         let content = r#"Outer content:
 
-````markdown example
+````rust example
 # Example
 
 Here's a nested code fence:
@@ -218,9 +220,10 @@ let y = x + 1;"#
     fn extract_tildes_with_name() {
         let content = r#"Text before.
 
-~~~python example
-def hello():
-    print("Hello")
+~~~rust example
+fn hello() {
+    println!("Hello");
+}
 ~~~
 
 Text after."#;
@@ -228,8 +231,9 @@ Text after."#;
         let result = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
-            r#"def hello():
-    print("Hello")"#
+            r#"fn hello() {
+    println!("Hello");
+}"#
         );
     }
 
@@ -252,5 +256,53 @@ Text after."#;
     println!("test");
 }"#
         );
+    }
+
+    #[test]
+    fn extract_rust_with_whitespace() {
+        let content = r#"Text before.
+
+```  rust   example
+let a = 1;
+let b = 2;
+```
+
+Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"let a = 1;
+let b = 2;"#
+        );
+    }
+
+    #[test]
+    fn extract_no_rust_language() {
+        let content = r#"Text before.
+
+```python example
+def test():
+    pass
+```
+
+Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect);
+        assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
+    }
+
+    #[test]
+    fn extract_name_without_rust() {
+        let content = r#"Text before.
+
+```javascript example
+console.log("test");
+```
+
+Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect);
+        assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
     }
 }
