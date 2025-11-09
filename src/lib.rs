@@ -3,6 +3,7 @@
 
 #![doc = include_str!("../README.md")]
 
+mod asciidoc;
 mod markdown;
 #[cfg(test)]
 mod tests;
@@ -18,7 +19,51 @@ use syn::{
     parse2, LitStr, Token,
 };
 
-/// Include code from within a code fence in a markdown file.
+/// Include code from within a source block in an AsciiDoc file.
+///
+/// Two arguments are required: a file path relative to the current source file,
+/// and an id defined within the source block attributes as shown below.
+///
+/// All AsciiDoc [source blocks](https://docs.asciidoctor.org/asciidoc/latest/verbatim/source-blocks/)
+/// with delimited [listing blocks](https://docs.asciidoctor.org/asciidoc/latest/verbatim/listing-blocks/) are supported.
+///
+/// # Examples
+///
+/// Consider the following source block in a crate `README.adoc` AsciiDoc file:
+///
+/// ```asciidoc
+/// [,rust,id="example"]
+/// ----
+/// let m = example()?;
+/// assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
+/// ----
+/// ```
+///
+/// We can include this code block in our Rust tests:
+///
+/// ```no_run
+/// struct Model {
+///     name: String,
+/// }
+///
+/// fn example() -> Result<Model, Box<dyn std::error::Error>> {
+///     Ok(Model { name: "example".into() })
+/// }
+///
+/// #[test]
+/// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+///     include_asciidoc!("../README.adoc", "example");
+///     Ok(())
+/// }
+/// ```
+#[proc_macro]
+pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    asciidoc::include_asciidoc(item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Include code from within a code fence in a Markdown file.
 ///
 /// Two arguments are required: a file path relative to the current source file,
 /// and a name defined within the code fence as shown below.
@@ -27,7 +72,7 @@ use syn::{
 ///
 /// # Examples
 ///
-/// Consider the following code fence in a crate `README.md` markdown file:
+/// Consider the following code fence in a crate `README.md` Markdown file:
 ///
 /// ````markdown
 /// ```rust example
@@ -37,7 +82,7 @@ use syn::{
 /// ````
 ///
 /// In Rust documentation comments, we can use `# line` to hide setup code.
-/// That's not possible in markdown, so we can include only the code we want to demonstrate;
+/// That's not possible in Markdown, so we can include only the code we want to demonstrate;
 /// however, we can still compile and even run it in Rust tests:
 ///
 /// ```no_run
@@ -103,16 +148,10 @@ where
 }
 
 fn open(path: &str) -> io::Result<fs::File> {
-    let file_path = PathBuf::from(file!());
-    let path = file_path
-        .parent()
-        .ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::NotFound,
-                "could not get parent of current source file",
-            )
-        })?
-        .join(path);
+    let manifest_dir: PathBuf = option_env!("CARGO_MANIFEST_DIR")
+        .ok_or_else(|| io::Error::other("no manifest directory"))?
+        .into();
+    let path = manifest_dir.join(path);
     fs::File::open(path)
 }
 
