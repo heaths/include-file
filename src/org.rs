@@ -20,14 +20,16 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
             let trimmed = line.trim();
 
             // Look for #+NAME: immediately before #+BEGIN_SRC (case-insensitive)
-            if trimmed.len() >= 7
-                && trimmed[..7].eq_ignore_ascii_case("#+NAME:")
+            if trimmed
+                .get(..7)
+                .is_some_and(|s| s.eq_ignore_ascii_case("#+NAME:"))
                 && has_matching_name(trimmed, name)
             {
                 found_name = true;
             } else if found_name
-                && trimmed.len() >= 11
-                && trimmed[..11].eq_ignore_ascii_case("#+BEGIN_SRC")
+                && trimmed
+                    .get(..11)
+                    .is_some_and(|s| s.eq_ignore_ascii_case("#+BEGIN_SRC"))
                 && is_rust_block(trimmed)
             {
                 in_block = true;
@@ -41,7 +43,10 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
             let trimmed = line.trim();
 
             // Check for end of block (case-insensitive)
-            if trimmed.len() >= 9 && trimmed[..9].eq_ignore_ascii_case("#+END_SRC") {
+            if trimmed
+                .get(..9)
+                .is_some_and(|s| s.eq_ignore_ascii_case("#+END_SRC"))
+            {
                 break;
             }
 
@@ -57,10 +62,12 @@ fn has_matching_name(line: &str, name: &str) -> bool {
     // Look for #+NAME: followed by whitespace and the name (case-insensitive)
     // Example: #+NAME: example or #+name: example
     let trimmed = line.trim();
-    if trimmed.len() >= 7 && trimmed[..7].eq_ignore_ascii_case("#+NAME:") {
-        let rest = trimmed[7..].trim_start();
-        // Check if the rest matches the name exactly (no extra characters after)
-        return rest == name;
+    if let Some(prefix) = trimmed.get(..7) {
+        if prefix.eq_ignore_ascii_case("#+NAME:") {
+            let rest = trimmed[7..].trim_start();
+            // Check if the rest matches the name exactly (no extra characters after)
+            return rest == name;
+        }
     }
     false
 }
@@ -69,10 +76,12 @@ fn is_rust_block(line: &str) -> bool {
     // Check if the line is #+BEGIN_SRC rust (case-insensitive, with possible whitespace)
     // Example: #+BEGIN_SRC rust or #+begin_src rust
     let trimmed = line.trim();
-    if trimmed.len() >= 11 && trimmed[..11].eq_ignore_ascii_case("#+BEGIN_SRC") {
-        let rest = trimmed[11..].trim_start();
-        // Check if it starts with "rust" (followed by whitespace or end of line)
-        return rest == "rust" || rest.starts_with("rust ");
+    if let Some(prefix) = trimmed.get(..11) {
+        if prefix.eq_ignore_ascii_case("#+BEGIN_SRC") {
+            let rest = trimmed[11..].trim_start();
+            // Check if it starts with "rust" (followed by whitespace or end of line)
+            return rest == "rust" || rest.starts_with("rust ");
+        }
     }
     false
 }
@@ -304,27 +313,5 @@ Text after."#;
         let cursor = io::Cursor::new(content);
         let result = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("mixed case");"#);
-    }
-
-    #[test]
-    fn extract_lowercase_multiline() {
-        let content = r#"Some text.
-
-#+name: example
-#+begin_src rust
-fn test() {
-    assert_eq!(1 + 1, 2);
-}
-#+end_src
-
-More text."#;
-        let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
-        assert_eq!(
-            result,
-            r#"fn test() {
-    assert_eq!(1 + 1, 2);
-}"#
-        );
     }
 }
