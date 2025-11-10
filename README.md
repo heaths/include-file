@@ -30,7 +30,7 @@ assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 ```
 ````
 
-We didn't define the `example()` function nor the type of `x`. In Rust doc tests you could do so with lines prefaced with `#` e.g.:
+We didn't define the `example()` function nor the type of `m`. In Rust doc tests you could do so with lines prefaced with `#` e.g.:
 
 ```rust
 /// ```
