@@ -20,7 +20,7 @@ assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 #+END_SRC
 #+END_EXAMPLE
 
-We didn't define the ~example()~ function nor the type of ~x~.
+We didn't define the ~example()~ function nor the type of ~m~.
 In Rust doc tests you could do so with lines prefaced with ~#~, but those lines would render in an org file.
 Instead, we could use ~include_org!("../README.org", "example")~ to include the example content from ~README.org~ above in a test to make sure it compiles and even runs.
 
