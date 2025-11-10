@@ -7,6 +7,7 @@ mod asciidoc;
 mod markdown;
 #[cfg(test)]
 mod tests;
+mod textile;
 
 use proc_macro2::{Span, TokenStream};
 use std::{
@@ -103,6 +104,48 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 #[proc_macro]
 pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     markdown::include_markdown(item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Include code from within a code block in a Textile file.
+///
+/// Two arguments are required: a file path relative to the current source file,
+/// and an id defined within the code block as shown below.
+///
+/// All Textile [code blocks](https://textile-lang.com/doc/block-code) are supported.
+///
+/// # Examples
+///
+/// Consider the following code block in a crate `README.textile` Textile file:
+///
+/// ```textile
+/// bc(rust#example). let m = example()?;
+/// assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
+/// ```
+///
+/// In Rust documentation comments, we can use `# line` to hide setup code.
+/// That's not possible in Textile, so we can include only the code we want to demonstrate;
+/// however, we can still compile and even run it in Rust tests:
+///
+/// ```no_run
+/// struct Model {
+///     name: String,
+/// }
+///
+/// fn example() -> Result<Model, Box<dyn std::error::Error>> {
+///     Ok(Model { name: "example".into() })
+/// }
+///
+/// #[test]
+/// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+///     include_textile!("../README.textile", "example");
+///     Ok(())
+/// }
+/// ```
+#[proc_macro]
+pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    textile::include_textile(item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
