@@ -19,10 +19,17 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         if !in_block {
             let trimmed = line.trim();
 
-            // Look for #+NAME: immediately before #+BEGIN_SRC
-            if trimmed.starts_with("#+NAME:") && has_matching_name(trimmed, name) {
+            // Look for #+NAME: immediately before #+BEGIN_SRC (case-insensitive)
+            if trimmed.len() >= 7
+                && trimmed[..7].eq_ignore_ascii_case("#+NAME:")
+                && has_matching_name(trimmed, name)
+            {
                 found_name = true;
-            } else if found_name && trimmed.starts_with("#+BEGIN_SRC") && is_rust_block(trimmed) {
+            } else if found_name
+                && trimmed.len() >= 11
+                && trimmed[..11].eq_ignore_ascii_case("#+BEGIN_SRC")
+                && is_rust_block(trimmed)
+            {
                 in_block = true;
                 found_name = false;
             } else if found_name {
@@ -33,8 +40,8 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         } else {
             let trimmed = line.trim();
 
-            // Check for end of block
-            if trimmed.starts_with("#+END_SRC") {
+            // Check for end of block (case-insensitive)
+            if trimmed.len() >= 9 && trimmed[..9].eq_ignore_ascii_case("#+END_SRC") {
                 break;
             }
 
@@ -47,11 +54,11 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
 }
 
 fn has_matching_name(line: &str, name: &str) -> bool {
-    // Look for #+NAME: followed by whitespace and the name
-    // Example: #+NAME: example
+    // Look for #+NAME: followed by whitespace and the name (case-insensitive)
+    // Example: #+NAME: example or #+name: example
     let trimmed = line.trim();
-    if let Some(rest) = trimmed.strip_prefix("#+NAME:") {
-        let rest = rest.trim_start();
+    if trimmed.len() >= 7 && trimmed[..7].eq_ignore_ascii_case("#+NAME:") {
+        let rest = trimmed[7..].trim_start();
         // Check if the rest matches the name exactly (no extra characters after)
         return rest == name;
     }
@@ -59,11 +66,11 @@ fn has_matching_name(line: &str, name: &str) -> bool {
 }
 
 fn is_rust_block(line: &str) -> bool {
-    // Check if the line is #+BEGIN_SRC rust (with possible whitespace)
-    // Example: #+BEGIN_SRC rust
+    // Check if the line is #+BEGIN_SRC rust (case-insensitive, with possible whitespace)
+    // Example: #+BEGIN_SRC rust or #+begin_src rust
     let trimmed = line.trim();
-    if let Some(rest) = trimmed.strip_prefix("#+BEGIN_SRC") {
-        let rest = rest.trim_start();
+    if trimmed.len() >= 11 && trimmed[..11].eq_ignore_ascii_case("#+BEGIN_SRC") {
+        let rest = trimmed[11..].trim_start();
         // Check if it starts with "rust" (followed by whitespace or end of line)
         return rest == "rust" || rest.starts_with("rust ");
     }
@@ -267,5 +274,57 @@ Text after."#;
         let cursor = io::Cursor::new(content);
         let result = extract(cursor, "example", collect);
         assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
+    }
+
+    #[test]
+    fn extract_lowercase_directives() {
+        let content = r#"Text before.
+
+#+name: example
+#+begin_src rust
+println!("lowercase directives");
+#+end_src
+
+Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(result, r#"println!("lowercase directives");"#);
+    }
+
+    #[test]
+    fn extract_mixed_case_directives() {
+        let content = r#"Text before.
+
+#+Name: example
+#+Begin_Src rust
+println!("mixed case");
+#+End_Src
+
+Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(result, r#"println!("mixed case");"#);
+    }
+
+    #[test]
+    fn extract_lowercase_multiline() {
+        let content = r#"Some text.
+
+#+name: example
+#+begin_src rust
+fn test() {
+    assert_eq!(1 + 1, 2);
+}
+#+end_src
+
+More text."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"fn test() {
+    assert_eq!(1 + 1, 2);
+}"#
+        );
     }
 }
