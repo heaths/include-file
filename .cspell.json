@@ -13,6 +13,7 @@
     "adoc",
     "clippy",
     "doctest",
+    "mkdn",
     "repr",
     "rustlang",
     "rustup"
@@ -21,7 +22,7 @@
     {
       "name": "crates",
       "words": [
-        "syn",
+        "syn"
       ]
     }
   ],

@@ -8,6 +8,13 @@ Macros like `include_markdown!("README.md", "example")` allow you to include inc
 Though Rust doc tests let you hide setup code from being rendered, you cannot do the same when rendering markdown.
 You can demonstrate just the code you want in markdown while maintaining the benefit of compiling it in tests.
 
+## Macros
+
+* `include_asciidoc!(path, name)` includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
+* `include_markdown!(path, name)` includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
+* `include_org!(path, name)` includes Rust snippets from Org files, commonly with `.org` extension.
+* `include_textile!(path, name)` includes Rust snippets from Textile files, commonly with `.textile` extension.
+
 ## Examples
 
 The `include_markdown!()` macro resolves a file path relative to the directory containing the crate `Cargo.toml` manifest file.
