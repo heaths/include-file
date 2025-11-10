@@ -18,9 +18,10 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
 
         if !in_block {
             // Look for a code block starting with bc(rust#name). or bc(rust#name)..
+            // or bc[rust](#name). or bc(#name)[rust].
             let trimmed = line.trim();
 
-            if trimmed.starts_with("bc(rust#") && has_matching_id(trimmed, name) {
+            if trimmed.starts_with("bc") && has_matching_id(trimmed, name) {
                 is_double_period = trimmed.contains("..");
 
                 // Extract content after the first space on the same line
@@ -66,15 +67,40 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
 }
 
 fn has_matching_id(line: &str, name: &str) -> bool {
-    // Look for bc(rust#name). or bc(rust#name)..
+    // Look for bc(rust#name). or bc(rust#name).. or bc[rust](#name). or bc(#name)[rust].
     // Examples: bc(rust#example).
     //           bc(rust#example)..
+    //           bc[rust](#example).
+    //           bc(#example)[rust]..
 
-    let pattern = format!("bc(rust#{})", name);
-    if let Some(pos) = line.find(&pattern) {
-        let after_pattern = &line[pos + pattern.len()..];
+    // Pattern 1: bc(rust#name)
+    let pattern1 = format!("bc(rust#{})", name);
+    if let Some(pos) = line.find(&pattern1) {
+        let after_pattern = &line[pos + pattern1.len()..];
         // Check if followed by . or ..
-        return after_pattern.starts_with('.') || after_pattern.starts_with("..");
+        if after_pattern.starts_with('.') || after_pattern.starts_with("..") {
+            return true;
+        }
+    }
+
+    // Pattern 2: bc[rust](#name)
+    let pattern2 = format!("bc[rust](#{})", name);
+    if let Some(pos) = line.find(&pattern2) {
+        let after_pattern = &line[pos + pattern2.len()..];
+        // Check if followed by . or ..
+        if after_pattern.starts_with('.') || after_pattern.starts_with("..") {
+            return true;
+        }
+    }
+
+    // Pattern 3: bc(#name)[rust]
+    let pattern3 = format!("bc(#{})[rust]", name);
+    if let Some(pos) = line.find(&pattern3) {
+        let after_pattern = &line[pos + pattern3.len()..];
+        // Check if followed by . or ..
+        if after_pattern.starts_with('.') || after_pattern.starts_with("..") {
+            return true;
+        }
     }
 
     false
@@ -136,19 +162,18 @@ p. More text."#;
     fn extract_single_period_with_content() {
         let content = r#"Some introduction text.
 
-bc(rust#example). println!("hello, world!");
+bc[rust](#example). println!("hello, world!");
 
 p. Text after the block."#;
         let cursor = io::Cursor::new(content);
         let result = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("hello, world!");"#);
     }
-
     #[test]
     fn extract_double_period_multiline() {
         let content = r#"Some introduction text.
 
-bc(rust#example).. fn test() {
+bc(#example)[rust].. fn test() {
     assert_eq!(2 + 2, 4);
 }
 
@@ -167,7 +192,7 @@ p. Text after the block."#;
     fn extract_multiline_until_next_block() {
         let content = r#"Some introduction text.
 
-bc(rust#example).. let x = 42;
+bc[rust](#example).. let x = 42;
 let y = x + 1;
 
 bq. This is a quote block that ends the code."#;
@@ -188,7 +213,7 @@ bc(python#other). print("Not this one")
 
 p. And here's the one we want:
 
-bc(rust#example). println!("This is the one!");
+bc(#example)[rust]. println!("This is the one!");
 
 p. And another one."#;
         let cursor = io::Cursor::new(content);
@@ -219,7 +244,7 @@ p. Text after."#;
     fn extract_with_class_before_id() {
         let content = r#"Text before.
 
-bc(rust#example). let value = 123;
+bc[rust](#example). let value = 123;
 
 p. Text after."#;
         let cursor = io::Cursor::new(content);
