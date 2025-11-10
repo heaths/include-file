@@ -32,9 +32,8 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
                 if count >= 3 {
                     // Check if the rest of the line contains "rust" followed by the name
                     let after_fence = &trimmed_start[count..];
-                    // Check if line starts with optional whitespace followed by "rust"
-                    let trimmed_after = after_fence.trim_start();
-                    if trimmed_after.starts_with("rust") && after_fence.contains(name) {
+                    let after_fence = after_fence.trim_start();
+                    if after_fence.starts_with("rust") && after_fence.contains(name) {
                         in_fence = true;
                         fence_char = fence_ch;
                         fence_count = count;
