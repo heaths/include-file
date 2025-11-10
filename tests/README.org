@@ -1,0 +1,48 @@
+* Macros for including file content
+
+Macros like ~include_org!("../README.org", "example")~ allow you to include incomplete code from Org source blocks.
+Though Rust doc tests let you hide setup code from being rendered, you cannot do the same when rendering Org.
+You can demonstrate just the code you want in Org while maintaining the benefit of compiling it in tests.
+
+** Examples
+
+The ~include_org!()~ macro resolves a file path relative to the directory containing the crate ~Cargo.toml~ manifest file.
+
+Consider a crate ~README.org~ with the following content:
+
+#+BEGIN_EXAMPLE
+The ~example()~ function returns a model that implements ~Debug~ so you can easily print it:
+
+#+NAME: example
+#+BEGIN_SRC rust
+let m = example()?;
+assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
+#+END_SRC
+#+END_EXAMPLE
+
+We didn't define the ~example()~ function nor the type of ~x~.
+In Rust doc tests you could do so with lines prefaced with ~#~, but those lines would render in an org file.
+Instead, we could use ~include_org!("../README.org", "example")~ to include the example content from ~README.org~ above in a test to make sure it compiles and even runs.
+
+#+BEGIN_SRC rust
+#[derive(Debug)]
+struct Model {
+    name: String,
+}
+
+fn example() -> Result<Model, Box<dyn std::error::Error>> {
+    Ok(Model {
+        name: "example".into(),
+    })
+}
+
+#[test]
+fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+    include_org!("../README.org", "example");
+    Ok(())
+}
+#+END_SRC
+
+** License
+
+Licensed under the [[file:LICENSE.txt][MIT License]].
