@@ -1,7 +1,7 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
-use include_file::{include_asciidoc, include_markdown, include_textile};
+use include_file::{include_asciidoc, include_markdown, include_org, include_textile};
 
 #[test]
 fn test_asciidoc() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,6 +12,12 @@ fn test_asciidoc() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     include_markdown!("README.md", "example");
+    Ok(())
+}
+
+#[test]
+fn test_org() -> Result<(), Box<dyn std::error::Error>> {
+    include_org!("tests/README.org", "example");
     Ok(())
 }
 

@@ -5,6 +5,7 @@
 
 mod asciidoc;
 mod markdown;
+mod org;
 #[cfg(test)]
 mod tests;
 mod textile;
@@ -146,6 +147,51 @@ pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 #[proc_macro]
 pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     textile::include_textile(item.into())
+        .unwrap_or_else(syn::Error::into_compile_error)
+        .into()
+}
+
+/// Include code from within a source block in an Org file.
+///
+/// Two arguments are required: a file path relative to the current source file,
+/// and a name defined with `#+NAME:` immediately before the source block as shown below.
+///
+/// All Org [source code blocks](https://orgmode.org/manual/Structure-of-Code-Blocks.html) are supported.
+///
+/// # Examples
+///
+/// Consider the following source block in a crate `README.org` Org file:
+///
+/// ```org
+/// #+NAME: example
+/// #+BEGIN_SRC rust
+/// let m = example()?;
+/// assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
+/// #+END_SRC
+/// ```
+///
+/// In Rust documentation comments, we can use `# line` to hide setup code.
+/// That's not possible in Org, so we can include only the code we want to demonstrate;
+/// however, we can still compile and even run it in Rust tests:
+///
+/// ```no_run
+/// struct Model {
+///     name: String,
+/// }
+///
+/// fn example() -> Result<Model, Box<dyn std::error::Error>> {
+///     Ok(Model { name: "example".into() })
+/// }
+///
+/// #[test]
+/// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
+///     include_org!("../README.org", "example");
+///     Ok(())
+/// }
+/// ```
+#[proc_macro]
+pub fn include_org(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    org::include_org(item.into())
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }
