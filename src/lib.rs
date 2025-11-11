@@ -12,7 +12,7 @@ mod textile;
 
 use proc_macro2::{Span, TokenStream};
 use std::{
-    fmt, fs,
+    env, fmt, fs,
     io::{self, BufRead},
     path::PathBuf,
 };
@@ -237,8 +237,8 @@ where
 }
 
 fn open(path: &str) -> io::Result<fs::File> {
-    let manifest_dir: PathBuf = option_env!("CARGO_MANIFEST_DIR")
-        .ok_or_else(|| io::Error::other("no manifest directory"))?
+    let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR")
+        .map_err(|_| io::Error::other("no manifest directory"))?
         .into();
     let path = manifest_dir.join(path);
     fs::File::open(path)
