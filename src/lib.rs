@@ -54,7 +54,7 @@ use syn::{
 ///
 /// #[test]
 /// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-///     include_asciidoc!("../README.adoc", "example");
+///     include_asciidoc!("README.adoc", "example");
 ///     Ok(())
 /// }
 /// ```
@@ -98,7 +98,7 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///
 /// #[test]
 /// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-///     include_markdown!("../README.md", "example");
+///     include_markdown!("README.md", "example");
 ///     Ok(())
 /// }
 /// ```
@@ -140,7 +140,7 @@ pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///
 /// #[test]
 /// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-///     include_textile!("../README.textile", "example");
+///     include_textile!("README.textile", "example");
 ///     Ok(())
 /// }
 /// ```
@@ -185,7 +185,7 @@ pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// #[test]
 /// fn test_example() -> Result<(), Box<dyn std::error::Error>> {
-///     include_org!("../README.org", "example");
+///     include_org!("README.org", "example");
 ///     Ok(())
 /// }
 /// ```
