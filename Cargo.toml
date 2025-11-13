@@ -1,6 +1,6 @@
 [package]
 name = "include-file"
-version = "0.5.0"
+version = "0.5.1"
 description = "Include sections of files into Rust source code"
 readme = "README.md"
 authors = ["Heath Stewart (https://github.com/heaths)"]
@@ -26,6 +26,6 @@ test_attr_in_doctest = "allow"
 
 [lints.rust]
 unexpected_cfgs = { level = "allow", check-cfg = [
-    "cfg(rust_analyzer)",
-    "cfg(span_locations)",
+  "cfg(rust_analyzer)",
+  "cfg(span_locations)",
 ] }

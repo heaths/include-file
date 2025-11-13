@@ -12,17 +12,19 @@ You can demonstrate just the code you want in markdown while maintaining the ben
 
 Macro                           | Description
 ------------------------------- | ---
-`include_asciidoc!(path, name)` | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
-`include_markdown!(path, name)` | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
-`include_org!(path, name)`      | Includes Rust snippets from Org files, commonly with `.org` extension.
-`include_textile!(path, name)`  | Includes Rust snippets from Textile files, commonly with `.textile` extension.
+`include_asciidoc` | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
+`include_markdown` | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
+`include_org`      | Includes Rust snippets from Org files, commonly with `.org` extension.
+`include_textile`  | Includes Rust snippets from Textile files, commonly with `.textile` extension.
 
 All of these macros also support the following parameters:
 
 Parameter  | Description
 ---------- | ---
-`relative` | (*Requires rustc 1.88 or newer*) The path is relative to the source file calling the macro. May show an error in rust-analyzer until [rust-lang/rust-analyzer#15950](https://github.com/rust-lang/rust-analyzer/issues/15950) is fixed.
-`scope`    | Includes the Rust snippet in braces `{ .. }`.
+`path`     | (*Required*) Path relative to the crate root directory.
+`name`     | (*Required*) Name of the code fence to include.
+`scope`    | Include the snippet in braces `{ .. }`.
+`relative` | (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro. May show an error in rust-analyzer until [rust-lang/rust-analyzer#15950](https://github.com/rust-lang/rust-analyzer/issues/15950) is fixed.
 
 ## Examples
 
