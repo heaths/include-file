@@ -15,7 +15,7 @@ license = "MIT"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.103"
+proc-macro2 = { version = "1.0.103", features = ["span-locations"] }
 syn = "2.0.109"
 
 [dev-dependencies]
@@ -23,3 +23,9 @@ quote = "1.0.42"
 
 [lints.clippy]
 test_attr_in_doctest = "allow"
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = [
+    "cfg(rust_analyzer)",
+    "cfg(span_locations)",
+] }

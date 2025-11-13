@@ -15,6 +15,7 @@
     "doctest",
     "mkdn",
     "repr",
+    "rustc",
     "rustlang",
     "rustup"
   ],
@@ -31,6 +32,9 @@
       "filename": "Cargo.toml",
       "dictionaries": [
         "crates"
+      ],
+      "words": [
+        "cfgs"
       ]
     },
     {

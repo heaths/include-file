@@ -10,15 +10,17 @@ mod org;
 mod tests;
 mod textile;
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use std::{
-    env, fmt, fs,
+    env, fs,
     io::{self, BufRead},
     path::PathBuf,
 };
 use syn::{
     parse::{Parse, ParseStream},
-    parse2, LitStr, Token,
+    parse2,
+    spanned::Spanned,
+    LitStr, Meta, Token,
 };
 
 /// Include code from within a source block in an AsciiDoc file.
@@ -199,23 +201,46 @@ pub fn include_org(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 struct MarkdownArgs {
     path: LitStr,
     name: LitStr,
-}
-
-impl fmt::Debug for MarkdownArgs {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MarkdownArgs")
-            .field("path", &self.path.value())
-            .field("name", &self.name.value())
-            .finish()
-    }
+    scope: Option<Span>,
+    relative: Option<Span>,
 }
 
 impl Parse for MarkdownArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let path = input.parse()?;
+        const REQ_PARAMS: &str = r#"missing required string parameters ("path", "name")"#;
+
+        let path = input
+            .parse()
+            .map_err(|err| syn::Error::new(err.span(), REQ_PARAMS))?;
         input.parse::<Token![,]>()?;
-        let name = input.parse()?;
-        Ok(Self { path, name })
+        let name = input
+            .parse()
+            .map_err(|err| syn::Error::new(err.span(), REQ_PARAMS))?;
+
+        let mut scope = None;
+        let mut relative = None;
+
+        if input.parse::<Token![,]>().is_ok() {
+            let params = input.parse_terminated(Meta::parse, Token![,])?;
+            for param in params {
+                if param.path().is_ident("scope") {
+                    scope = Some(param.span());
+                } else if param.path().is_ident("relative") {
+                    relative = Some(param.span());
+                } else {
+                    return Err(syn::Error::new(param.span(), "unsupported parameter"));
+                }
+            }
+        } else if !input.is_empty() {
+            return Err(syn::Error::new(input.span(), "unexpected token"));
+        }
+
+        Ok(Self {
+            path,
+            name,
+            scope,
+            relative,
+        })
     }
 }
 
@@ -223,24 +248,39 @@ fn include_file<F>(item: TokenStream, f: F) -> syn::Result<TokenStream>
 where
     F: FnOnce(&str, io::Lines<io::BufReader<fs::File>>) -> io::Result<Vec<String>>,
 {
-    let args: MarkdownArgs = parse2(item).map_err(|_| {
-        syn::Error::new(
-            Span::call_site(),
-            "expected (path, name) literal string arguments",
-        )
-    })?;
-    let file = open(&args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
+    let args: MarkdownArgs = parse2(item)?;
+    let root = match args.relative {
+        #[cfg(span_locations)]
+        Some(span) => span.local_file(),
+        #[cfg(not(span_locations))]
+        Some(span) => return Err(syn::Error::new(span, "requires rustc 1.88 or newer")),
+        None => None,
+    };
+    let file =
+        open(root, &args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
     let content = extract(file, &args.name.value(), f)
         .map_err(|err| syn::Error::new(args.name.span(), err))?;
 
-    Ok(content.parse()?)
+    let mut content = content.parse()?;
+    if args.scope.is_some() {
+        content = TokenTree::Group(Group::new(Delimiter::Brace, content)).into();
+    }
+
+    Ok(content)
 }
 
-fn open(path: &str) -> io::Result<fs::File> {
+fn open(root: Option<PathBuf>, path: &str) -> io::Result<fs::File> {
     let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR")
         .map_err(|_| io::Error::other("no manifest directory"))?
         .into();
-    let path = manifest_dir.join(path);
+    let root = match root {
+        Some(path) => path
+            .parent()
+            .map(|dir| manifest_dir.join(dir))
+            .ok_or_else(|| io::Error::other("no source parent directory"))?,
+        None => manifest_dir,
+    };
+    let path = root.join(path);
     fs::File::open(path)
 }
 
