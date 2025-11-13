@@ -25,11 +25,15 @@ use syn::{
 
 /// Include code from within a source block in an AsciiDoc file.
 ///
-/// Two arguments are required: a file path relative to the current source file,
-/// and an id defined within the source block attributes as shown below.
-///
 /// All AsciiDoc [source blocks](https://docs.asciidoctor.org/asciidoc/latest/verbatim/source-blocks/)
 /// with delimited [listing blocks](https://docs.asciidoctor.org/asciidoc/latest/verbatim/listing-blocks/) are supported.
+///
+/// # Arguments
+///
+/// * `path` (*Required*) Path relative to the crate root directory.
+/// * `name` (*Required*) Name of the code fence to include.
+/// * `scope` Include the snippet in braces `{ .. }`.
+/// * `relative` (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro.
 ///
 /// # Examples
 ///
@@ -69,10 +73,14 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 
 /// Include code from within a code fence in a Markdown file.
 ///
-/// Two arguments are required: a file path relative to the current source file,
-/// and a name defined within the code fence as shown below.
-///
 /// All CommonMark [code fences](https://spec.commonmark.org/current/#fenced-code-blocks) are supported.
+///
+/// # Arguments
+///
+/// * `path` (*Required*) Path relative to the crate root directory.
+/// * `name` (*Required*) Name of the code fence to include.
+/// * `scope` Include the snippet in braces `{ .. }`.
+/// * `relative` (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro.
 ///
 /// # Examples
 ///
@@ -113,10 +121,14 @@ pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 
 /// Include code from within a code block in a Textile file.
 ///
-/// Two arguments are required: a file path relative to the current source file,
-/// and an id defined within the code block as shown below.
-///
 /// All Textile [code blocks](https://textile-lang.com/doc/block-code) are supported.
+///
+/// # Arguments
+///
+/// * `path` (*Required*) Path relative to the crate root directory.
+/// * `name` (*Required*) Name of the code fence to include.
+/// * `scope` Include the snippet in braces `{ .. }`.
+/// * `relative` (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro.
 ///
 /// # Examples
 ///
@@ -155,10 +167,14 @@ pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream
 
 /// Include code from within a source block in an Org file.
 ///
-/// Two arguments are required: a file path relative to the current source file,
-/// and a name defined with `#+NAME:` immediately before the source block as shown below.
-///
 /// All Org [source code blocks](https://orgmode.org/manual/Structure-of-Code-Blocks.html) are supported.
+///
+/// # Arguments
+///
+/// * `path` (*Required*) Path relative to the crate root directory.
+/// * `name` (*Required*) Name of the code fence to include.
+/// * `scope` Include the snippet in braces `{ .. }`.
+/// * `relative` (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro.
 ///
 /// # Examples
 ///
