@@ -12,6 +12,7 @@
   "words": [
     "adoc",
     "clippy",
+    "docsrs",
     "doctest",
     "mkdn",
     "repr",

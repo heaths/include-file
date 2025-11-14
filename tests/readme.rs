@@ -1,14 +1,23 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
-use include_file::{include_asciidoc, include_markdown, include_org, include_textile};
+#[cfg(feature = "asciidoc")]
+use include_file::include_asciidoc;
+#[cfg(feature = "markdown")]
+use include_file::include_markdown;
+#[cfg(feature = "org")]
+use include_file::include_org;
+#[cfg(feature = "textile")]
+use include_file::include_textile;
 
+#[cfg(feature = "asciidoc")]
 #[test]
 fn test_asciidoc() -> Result<(), Box<dyn std::error::Error>> {
     include_asciidoc!("tests/README.adoc", "example");
     Ok(())
 }
 
+#[cfg(feature = "markdown")]
 #[test]
 fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     include_markdown!("README.md", "example", scope);
@@ -16,6 +25,7 @@ fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // rust-analyzer does not implement Span::local_file(): https://github.com/rust-lang/rust-analyzer/issues/15950
+#[cfg(feature = "markdown")]
 #[cfg_attr(not(span_locations), ignore = "not supported")]
 #[test]
 fn test_relative_markdown() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,12 +42,14 @@ fn test_relative_markdown() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[cfg(feature = "org")]
 #[test]
 fn test_org() -> Result<(), Box<dyn std::error::Error>> {
     include_org!("tests/README.org", "example");
     Ok(())
 }
 
+#[cfg(feature = "textile")]
 #[test]
 fn test_textile() -> Result<(), Box<dyn std::error::Error>> {
     include_textile!("tests/README.textile", "example");
