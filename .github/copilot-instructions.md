@@ -135,6 +135,13 @@ When adding support for a new documentation format:
 
 This project requires Rust 1.85.0 or newer (see `rust-toolchain.toml`).
 
+### Pull Request Conventions
+
+- Draft PRs do not need to start with "[WIP]" prefix
+- If a PR title starts with "[WIP]", remove it once you're done resolving the request
+- Use simple, descriptive titles following git commit message conventions
+- Keep PR descriptions brief, summarizing the changes made
+
 ## Example Workflow
 
 When asked to add a new format:
