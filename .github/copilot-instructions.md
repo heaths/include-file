@@ -1,12 +1,14 @@
 # Copilot Instructions for include-file
 
-This repository provides procedural macros for including code snippets from various documentation formats (Markdown, AsciiDoc, Org, Textile) into Rust source code.
+This repository provides procedural macros for including code snippets from various documentation formats
+(Markdown, AsciiDoc, Org, Textile) into Rust source code.
 
 ## Development Guidelines
 
 ### Expert Rust Developer Context
 
 You are working on a Rust procedural macro library that:
+
 - Parses documentation files (Markdown, AsciiDoc, Org, Textile)
 - Extracts named code fences/blocks from these files
 - Includes the extracted code as Rust source code via proc macros
@@ -15,6 +17,7 @@ You are working on a Rust procedural macro library that:
 ### Testing Workflow
 
 1. **Run tests for specific modules**: When adding or modifying code, initially test only the affected modules:
+
    ```bash
    # Test a specific module
    cargo test markdown::tests
@@ -25,6 +28,7 @@ You are working on a Rust procedural macro library that:
    ```
 
 2. **Run full test suite**: Before completing any request, run the full test suite:
+
    ```bash
    cargo test
    ```
@@ -34,14 +38,29 @@ You are working on a Rust procedural macro library that:
    - Integration tests are in `tests/readme.rs`
    - Each format has a corresponding README in `tests/` (e.g., `tests/README.adoc`, `tests/README.org`)
 
-### Formatting Requirements
+### Formatting and Linting Requirements
 
-**Always run `cargo fmt` before completing any request:**
-```bash
-cargo fmt
-```
+**Always run these checks before completing any request:**
 
-This ensures code style consistency across the project. The repository uses standard Rust formatting conventions.
+1. **Format Rust code:**
+
+   ```bash
+   cargo fmt
+   ```
+
+2. **Check spelling** (uses `.cspell.json` configuration):
+
+   ```bash
+   npx cspell "**/*.{rs,md,toml,yml,yaml}"
+   ```
+
+3. **Lint Markdown files:**
+
+   ```bash
+   npx markdownlint-cli README.md .github/**/*.md
+   ```
+
+These ensure code style consistency and documentation quality across the project.
 
 ### Code Organization Patterns
 
@@ -50,6 +69,7 @@ When adding support for a new documentation format:
 1. **Create a new module** in `src/`:
    - File: `src/newformat.rs`
    - Module structure:
+
      ```rust
      use proc_macro2::TokenStream;
      use std::{fs, io};
@@ -127,12 +147,16 @@ When asked to add a new format:
 6. Add integration test in `tests/readme.rs`
 7. Run targeted tests: `cargo test newformat::tests`
 8. Run full suite: `cargo test`
-9. Format code: `cargo fmt`
-10. Verify all tests pass and code is formatted
+9. Format and lint:
+   - `cargo fmt`
+   - `npx cspell "**/*.{rs,md,toml,yml,yaml}"`
+   - `npx markdownlint-cli README.md .github/**/*.md`
+10. Verify all tests pass and checks complete successfully
 
 ## Questions to Ask
 
 When uncertain about:
+
 - Format-specific syntax → Consult the format's official documentation
 - Parser edge cases → Add test cases to capture the behavior
 - Integration patterns → Reference existing format implementations

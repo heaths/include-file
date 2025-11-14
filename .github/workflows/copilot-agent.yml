@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   copilot_agent:
 
+permissions:
+  contents: read
+
 jobs:
   copilot-agent:
     runs-on: ubuntu-latest
@@ -11,6 +14,11 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
     
     - name: Set up Rust toolchain
       run: |
@@ -28,11 +36,17 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-copilot-${{ hashFiles('**/Cargo.lock') }}
     
+    - name: Install Node.js tools
+      run: |
+        npm install -g cspell markdownlint-cli
+    
     - name: Run Copilot Agent
       run: |
         echo "Copilot agent environment ready"
-        echo "Available components: cargo, clippy, rustfmt"
+        echo "Available components: cargo, clippy, rustfmt, cspell, markdownlint"
         echo "Rust version: $(rustc --version)"
         echo "Cargo version: $(cargo --version)"
         echo "Clippy version: $(cargo clippy --version)"
         echo "Rustfmt version: $(cargo fmt --version)"
+        echo "cspell version: $(cspell --version)"
+        echo "markdownlint version: $(markdownlint --version)"
