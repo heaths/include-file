@@ -52,6 +52,8 @@ jobs:
       run: rustup override set ${{ matrix.toolchain }}
     - name: Test
       run: cargo test --all-features --workspace
+    - name: Test no default features
+      run: cargo test --no-default-features
 
   analyze:
     runs-on: ubuntu-latest

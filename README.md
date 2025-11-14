@@ -8,24 +8,6 @@ Macros like `include_markdown!("README.md", "example")` allow you to include inc
 Though Rust doc tests let you hide setup code from being rendered, you cannot do the same when rendering markdown.
 You can demonstrate just the code you want in markdown while maintaining the benefit of compiling it in tests.
 
-## Macros
-
-Macro                           | Description
-------------------------------- | ---
-`include_asciidoc` | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
-`include_markdown` | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
-`include_org`      | Includes Rust snippets from Org files, commonly with `.org` extension.
-`include_textile`  | Includes Rust snippets from Textile files, commonly with `.textile` extension.
-
-All of these macros also support the following parameters:
-
-Parameter  | Description
----------- | ---
-`path`     | (*Required*) Path relative to the crate root directory.
-`name`     | (*Required*) Name of the code fence to include.
-`scope`    | Include the snippet in braces `{ .. }`.
-`relative` | (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro. May show an error in rust-analyzer until [rust-lang/rust-analyzer#15950](https://github.com/rust-lang/rust-analyzer/issues/15950) is fixed.
-
 ## Examples
 
 The `include_markdown!()` macro resolves a file path relative to the directory containing the crate `Cargo.toml` manifest file.
@@ -75,6 +57,24 @@ fn test_example() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+## Macros
+
+Macro              | Feature    | Description
+------------------ | ---------- | ---
+`include_asciidoc` | `asciidoc` | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
+`include_markdown` |            | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
+`include_org`      | `org`      | Includes Rust snippets from Org files, commonly with `.org` extension.
+`include_textile`  | `textile`  | Includes Rust snippets from Textile files, commonly with `.textile` extension.
+
+All of these macros also support the following parameters:
+
+Parameter  | Description
+---------- | ---
+`path`     | (*Required*) Path relative to the crate root directory.
+`name`     | (*Required*) Name of the code fence to include.
+`scope`    | Include the snippet in braces `{ .. }`.
+`relative` | (*Requires rustc 1.88 or newer*) Path is relative to the source file calling the macro. May show an error in rust-analyzer until [rust-lang/rust-analyzer#15950](https://github.com/rust-lang/rust-analyzer/issues/15950) is fixed.
 
 ## License
 

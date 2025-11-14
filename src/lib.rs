@@ -1,13 +1,17 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "asciidoc")]
 mod asciidoc;
 mod markdown;
+#[cfg(feature = "org")]
 mod org;
 #[cfg(test)]
 mod tests;
+#[cfg(feature = "textile")]
 mod textile;
 
 use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
@@ -64,6 +68,7 @@ use syn::{
 ///     Ok(())
 /// }
 /// ```
+#[cfg(feature = "asciidoc")]
 #[proc_macro]
 pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     asciidoc::include_asciidoc(item.into())
@@ -158,6 +163,7 @@ pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///     Ok(())
 /// }
 /// ```
+#[cfg(feature = "textile")]
 #[proc_macro]
 pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     textile::include_textile(item.into())
@@ -207,6 +213,7 @@ pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///     Ok(())
 /// }
 /// ```
+#[cfg(feature = "org")]
 #[proc_macro]
 pub fn include_org(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     org::include_org(item.into())
