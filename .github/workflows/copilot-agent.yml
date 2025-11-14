@@ -1,0 +1,38 @@
+name: Copilot Agent
+
+on:
+  workflow_dispatch:
+  copilot_agent:
+
+jobs:
+  copilot-agent:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Rust toolchain
+      run: |
+        rustup show
+        rustup component add cargo clippy rustfmt
+    
+    - name: Cache cargo dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-copilot-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Run Copilot Agent
+      run: |
+        echo "Copilot agent environment ready"
+        echo "Available components: cargo, clippy, rustfmt"
+        echo "Rust version: $(rustc --version)"
+        echo "Cargo version: $(cargo --version)"
+        echo "Clippy version: $(cargo clippy --version)"
+        echo "Rustfmt version: $(cargo fmt --version)"
