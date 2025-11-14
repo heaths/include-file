@@ -60,12 +60,12 @@ fn test_example() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Macros
 
-Macro                           | Feature      | Description
-------------------------------- | ------------ | ---
-`include_asciidoc` | `asciidoc`   | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
-`include_markdown` | Always available | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
-`include_org`      | `org`        | Includes Rust snippets from Org files, commonly with `.org` extension.
-`include_textile`  | `textile`    | Includes Rust snippets from Textile files, commonly with `.textile` extension.
+Macro              | Feature    | Description
+------------------ | ---------- | ---
+`include_asciidoc` | `asciidoc` | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
+`include_markdown` |            | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
+`include_org`      | `org`      | Includes Rust snippets from Org files, commonly with `.org` extension.
+`include_textile`  | `textile`  | Includes Rust snippets from Textile files, commonly with `.textile` extension.
 
 All of these macros also support the following parameters:
 
