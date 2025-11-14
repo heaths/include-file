@@ -1,14 +1,19 @@
-name: Copilot Agent
+name: Copilot Setup Steps
 
 on:
   workflow_dispatch:
-  copilot_agent:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
 
 permissions:
   contents: read
 
 jobs:
-  copilot-agent:
+  copilot-setup-steps:
     runs-on: ubuntu-latest
     
     steps:
