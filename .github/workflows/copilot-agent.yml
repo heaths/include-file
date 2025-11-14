@@ -21,9 +21,7 @@ jobs:
         node-version: '20'
     
     - name: Set up Rust toolchain
-      run: |
-        rustup show
-        rustup component add cargo clippy rustfmt
+      run: rustup install
     
     - name: Cache cargo dependencies
       uses: actions/cache@v4
@@ -45,8 +43,3 @@ jobs:
         echo "Copilot agent environment ready"
         echo "Available components: cargo, clippy, rustfmt, cspell, markdownlint"
         echo "Rust version: $(rustc --version)"
-        echo "Cargo version: $(cargo --version)"
-        echo "Clippy version: $(cargo clippy --version)"
-        echo "Rustfmt version: $(cargo fmt --version)"
-        echo "cspell version: $(cspell --version)"
-        echo "markdownlint version: $(markdownlint --version)"

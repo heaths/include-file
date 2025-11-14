@@ -1,7 +1,7 @@
 # Copilot Instructions for include-file
 
 This repository provides procedural macros for including code snippets from various documentation formats
-(Markdown, AsciiDoc, Org, Textile) into Rust source code.
+(Markdown, AsciiDoc, Org, Textile, et. al.) into Rust source code.
 
 ## Development Guidelines
 
@@ -51,7 +51,7 @@ You are working on a Rust procedural macro library that:
 2. **Check spelling** (uses `.cspell.json` configuration):
 
    ```bash
-   npx cspell "**/*.{rs,md,toml,yml,yaml}"
+   npx cspell .
    ```
 
 3. **Lint Markdown files:**
@@ -149,7 +149,7 @@ When asked to add a new format:
 8. Run full suite: `cargo test`
 9. Format and lint:
    - `cargo fmt`
-   - `npx cspell "**/*.{rs,md,toml,yml,yaml}"`
+   - `npx cspell .`
    - `npx markdownlint-cli README.md .github/**/*.md`
 10. Verify all tests pass and checks complete successfully
 
