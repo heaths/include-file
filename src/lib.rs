@@ -6,7 +6,6 @@
 
 #[cfg(feature = "asciidoc")]
 mod asciidoc;
-#[cfg(feature = "markdown")]
 mod markdown;
 #[cfg(feature = "org")]
 mod org;
@@ -118,7 +117,6 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 ///     Ok(())
 /// }
 /// ```
-#[cfg(feature = "markdown")]
 #[proc_macro]
 pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     markdown::include_markdown(item.into())

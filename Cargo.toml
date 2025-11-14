@@ -15,9 +15,8 @@ license = "MIT"
 proc-macro = true
 
 [features]
-default = ["asciidoc", "markdown", "org", "textile"]
+default = ["asciidoc", "org", "textile"]
 asciidoc = []
-markdown = []
 org = []
 textile = []
 

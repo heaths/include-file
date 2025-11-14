@@ -63,7 +63,7 @@ fn test_example() -> Result<(), Box<dyn std::error::Error>> {
 Macro                           | Feature      | Description
 ------------------------------- | ------------ | ---
 `include_asciidoc` | `asciidoc`   | Includes Rust snippets from AsciiDoc files, commonly with `.asciidoc`, `.adoc`, or `.asc` extensions.
-`include_markdown` | `markdown`   | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
+`include_markdown` | Always available | Includes Rust snippets from Markdown files, commonly with `.markdown`, `.mdown`, `.mkdn`, or `.md` extensions.
 `include_org`      | `org`        | Includes Rust snippets from Org files, commonly with `.org` extension.
 `include_textile`  | `textile`    | Includes Rust snippets from Textile files, commonly with `.textile` extension.
 

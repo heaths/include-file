@@ -3,7 +3,6 @@
 
 #[cfg(feature = "asciidoc")]
 use include_file::include_asciidoc;
-#[cfg(feature = "markdown")]
 use include_file::include_markdown;
 #[cfg(feature = "org")]
 use include_file::include_org;
@@ -17,7 +16,6 @@ fn test_asciidoc() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(feature = "markdown")]
 #[test]
 fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     include_markdown!("README.md", "example", scope);
@@ -25,7 +23,6 @@ fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // rust-analyzer does not implement Span::local_file(): https://github.com/rust-lang/rust-analyzer/issues/15950
-#[cfg(feature = "markdown")]
 #[cfg_attr(not(span_locations), ignore = "not supported")]
 #[test]
 fn test_relative_markdown() -> Result<(), Box<dyn std::error::Error>> {

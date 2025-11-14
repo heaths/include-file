@@ -54,8 +54,6 @@ jobs:
       run: cargo test --all-features --workspace
     - name: Test no default features
       run: cargo test --no-default-features
-    - name: Test single feature
-      run: cargo test --no-default-features --features markdown
 
   analyze:
     runs-on: ubuntu-latest
