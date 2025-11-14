@@ -70,7 +70,6 @@ use syn::{
 /// }
 /// ```
 #[cfg(feature = "asciidoc")]
-#[cfg_attr(docsrs, doc(cfg(feature = "asciidoc")))]
 #[proc_macro]
 pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     asciidoc::include_asciidoc(item.into())
@@ -120,7 +119,6 @@ pub fn include_asciidoc(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// }
 /// ```
 #[cfg(feature = "markdown")]
-#[cfg_attr(docsrs, doc(cfg(feature = "markdown")))]
 #[proc_macro]
 pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     markdown::include_markdown(item.into())
@@ -168,7 +166,6 @@ pub fn include_markdown(item: proc_macro::TokenStream) -> proc_macro::TokenStrea
 /// }
 /// ```
 #[cfg(feature = "textile")]
-#[cfg_attr(docsrs, doc(cfg(feature = "textile")))]
 #[proc_macro]
 pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     textile::include_textile(item.into())
@@ -219,7 +216,6 @@ pub fn include_textile(item: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// }
 /// ```
 #[cfg(feature = "org")]
-#[cfg_attr(docsrs, doc(cfg(feature = "org")))]
 #[proc_macro]
 pub fn include_org(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     org::include_org(item.into())
