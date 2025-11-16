@@ -1,6 +1,6 @@
 [package]
 name = "include-file"
-version = "0.5.1"
+version = "0.5.2"
 description = "Include sections of files into Rust source code"
 readme = "README.md"
 authors = ["Heath Stewart (https://github.com/heaths)"]

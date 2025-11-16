@@ -17,7 +17,7 @@ Consider a crate `README.md` with the following content:
 ````markdown
 The `example()` function returns a model that implements `Debug` so you can easily print it:
 
-```rust example
+```rust ignore example
 let m = example()?;
 assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 ```
@@ -37,7 +37,7 @@ We didn't define the `example()` function nor the type of `m`. In Rust doc tests
 fn f() {}
 ```
 
-All those lines would render in a markdown file. Instead, we could use `include_markdown!("README.md", "example")` to include the example content from `README.md` above in a test to make sure it compiles and even runs.
+All those lines would render in a markdown file. Instead, we can use `include_markdown!("README.md", "example")` to include the code example content from `README.md` above in a test to make sure it compiles and even runs.
 
 ```rust
 #[derive(Debug)]
@@ -57,6 +57,8 @@ fn test_example() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+We also `ignore` the code example since it won't compile with `cargo test --doc`.
 
 ## Macros
 
