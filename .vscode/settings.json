@@ -7,10 +7,20 @@
   "rust-analyzer.cargo.features": "all",
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.checkOnSave": true,
+  "[json][jsonc]": {
+    "editor.formatOnSave": true,
+    "tabSize": 2
+  },
   "[rust]": {
     "editor.formatOnSave": true
   },
   "[toml]": {
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "sort": true,
+    "tabSize": 2
+  },
+  "[yaml]": {
+    "editor.formatOnSave": true,
+    "tabSize": 2
   }
 }

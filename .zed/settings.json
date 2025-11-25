@@ -1,0 +1,37 @@
+{
+  "ensure_final_newline_on_save": true,
+  "remove_trailing_whitespace_on_save": true,
+  "file_types": {
+    "JSONC": ["JSON"]
+  },
+  "languages": {
+    "JSONC": {
+      "format_on_save": "on",
+      "tab_size": 2
+    },
+    "Rust": {
+      "format_on_save": "on"
+    },
+    "TOML": {
+      "format_on_save": "on",
+      "tab_size": 2
+    },
+    "YAML": {
+      "format_on_save": "on",
+      "tab_size": 2
+    }
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "features": "all"
+        },
+        "check": {
+          "command": "clippy"
+        },
+        "checkOnSave": true
+      }
+    }
+  }
+}
