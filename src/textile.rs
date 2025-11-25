@@ -1,6 +1,8 @@
 // Copyright 2025 Heath Stewart.
 // Licensed under the MIT License. See LICENSE.txt in the project root for license information.
 
+// cspell:ignore notextile peekable myclass
+
 use proc_macro2::TokenStream;
 use std::{fs, io};
 
@@ -108,20 +110,89 @@ fn has_matching_id(line: &str, name: &str) -> bool {
 
 fn is_block_tag(line: &str) -> bool {
     // Check if line starts a new textile block
-    // Common block tags: p., bq., bc., h1., h2., etc.
+    // Block tags can have formatting characters like: p<., h1>., table(class)., etc.
+    // Valid formatting chars before period: <, >, =, and content in () or []
     if line.is_empty() {
         return false;
     }
 
-    // Check for common block patterns
-    let patterns = [
-        "p.", "bq.", "bc.", "bc(", "h1.", "h2.", "h3.", "h4.", "h5.", "h6.", "###.", "table.",
-        "pre.",
+    // Known block types
+    let block_types = [
+        "p",
+        "bq",
+        "bc",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "table",
+        "pre",
+        "notextile",
     ];
 
-    for pattern in &patterns {
-        if line.starts_with(pattern) {
-            return true;
+    for block_type in &block_types {
+        if let Some(after_block) = line.strip_prefix(block_type) {
+            // Block tag must be followed by valid formatting chars and then a period
+            // Valid chars: <, >, =, and content within () or []
+            let mut chars = after_block.chars().peekable();
+            let mut found_period = false;
+
+            while let Some(ch) = chars.next() {
+                match ch {
+                    '.' => {
+                        found_period = true;
+                        break;
+                    }
+                    '<' | '>' | '=' => {
+                        // Valid alignment/formatting character, continue
+                    }
+                    '(' => {
+                        // Parentheses can be:
+                        // 1. Empty or for indentation: p(. or p((.
+                        // 2. With content: table(myclass).
+                        // Look ahead to check if there's content before ) or .
+                        let mut depth = 1;
+                        while let Some(&next_ch) = chars.peek() {
+                            if next_ch == '.' {
+                                // Period found, this paren is just formatting
+                                break;
+                            } else if next_ch == ')' {
+                                chars.next(); // consume )
+                                depth -= 1;
+                                if depth == 0 {
+                                    break;
+                                }
+                            } else if next_ch == '(' {
+                                chars.next(); // consume (
+                                depth += 1;
+                            } else {
+                                chars.next(); // consume content character
+                            }
+                        }
+                    }
+                    ')' => {
+                        // Closing paren for indentation styling
+                    }
+                    '[' => {
+                        // Consume everything until matching ]
+                        for inner_ch in chars.by_ref() {
+                            if inner_ch == ']' {
+                                break;
+                            }
+                        }
+                    }
+                    _ => {
+                        // Invalid character before period
+                        break;
+                    }
+                }
+            }
+
+            if found_period {
+                return true;
+            }
         }
     }
 
@@ -300,5 +371,151 @@ p. Text after."#;
         let cursor = io::Cursor::new(content);
         let result = extract(cursor, "example", collect);
         assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
+    }
+
+    #[test]
+    fn extract_ends_at_right_aligned_header() {
+        let content = r#"Text before.
+
+bc(rust#example).. let x = 1;
+let y = 2;
+
+h1>. Right Aligned Header"#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"let x = 1;
+let y = 2;"#
+        );
+    }
+
+    #[test]
+    fn extract_ends_at_justified_paragraph() {
+        let content = r#"Text before.
+
+bc(rust#example).. fn test() {
+    println!("test");
+}
+
+p<>. Justified paragraph text."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"fn test() {
+    println!("test");
+}"#
+        );
+    }
+
+    #[test]
+    fn extract_ends_at_centered_header() {
+        let content = r#"Text before.
+
+bc(rust#example).. let value = 42;
+
+h2=. Centered Header"#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(result, "let value = 42;");
+    }
+
+    #[test]
+    fn extract_ends_at_indented_paragraph() {
+        let content = r#"Text before.
+
+bc(rust#example).. struct Point {
+    x: i32,
+}
+
+p(. Indented paragraph."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"struct Point {
+    x: i32,
+}"#
+        );
+    }
+
+    #[test]
+    fn extract_ends_at_table_with_class() {
+        let content = r#"Text before.
+
+bc(rust#example).. let data = vec![1, 2, 3];
+
+table(myclass). Some table content"#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(result, "let data = vec![1, 2, 3];");
+    }
+
+    #[test]
+    fn extract_ends_at_notextile_block() {
+        let content = r#"Text before.
+
+bc(rust#example).. fn example() {
+    println!("code");
+}
+
+notextile. Raw content here."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"fn example() {
+    println!("code");
+}"#
+        );
+    }
+
+    #[test]
+    fn extract_bc_with_bracket_syntax() {
+        let content = r#"Text before.
+
+bc[rust](#example). let value = 100;
+
+p. Text after."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(result, "let value = 100;");
+    }
+
+    #[test]
+    fn extract_ends_at_right_padded_paragraph() {
+        let content = r#"Text before.
+
+bc(rust#example).. let x = 10;
+let y = 20;
+
+p))). Right padded paragraph."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"let x = 10;
+let y = 20;"#
+        );
+    }
+
+    #[test]
+    fn extract_ends_at_combined_padding_paragraph() {
+        let content = r#"Text before.
+
+bc(rust#example).. fn test() {
+    return 42;
+}
+
+p()). Left indent and right padding."#;
+        let cursor = io::Cursor::new(content);
+        let result = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(
+            result,
+            r#"fn test() {
+    return 42;
+}"#
+        );
     }
 }
