@@ -283,7 +283,7 @@ where
         Some(span) => return Err(syn::Error::new(span, "requires rustc 1.88 or newer")),
         None => None,
     };
-    let file =
+    let (file, display_path) =
         open(root, &args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
     let (start_line, content) = extract(file, &args.name.value(), f)
         .map_err(|err| syn::Error::new(args.name.span(), err))?;
@@ -291,7 +291,6 @@ where
     let n = INCLUDE_COUNTER.fetch_add(1, Ordering::Relaxed);
     let guard_type = Ident::new(&format!("__IncludeFileGuard{n}"), Span::call_site());
     let guard_var = Ident::new(&format!("__include_file_guard{n}"), Span::call_site());
-    let path_value = args.path.value();
 
     let guard = quote! {
         struct #guard_type {
@@ -310,7 +309,7 @@ where
             }
         }
         let #guard_var = #guard_type {
-            file: #path_value,
+            file: #display_path,
             line: #start_line,
         };
     };
@@ -326,19 +325,32 @@ where
     Ok(output)
 }
 
-fn open(root: Option<PathBuf>, path: &str) -> io::Result<fs::File> {
+fn open(root: Option<PathBuf>, path: &str) -> io::Result<(fs::File, String)> {
     let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR")
         .map_err(|_| io::Error::other("no manifest directory"))?
         .into();
-    let root = match root {
-        Some(path) => path
+    let root_dir = match root {
+        Some(ref src) => src
             .parent()
             .map(|dir| manifest_dir.join(dir))
             .ok_or_else(|| io::Error::other("no source parent directory"))?,
-        None => manifest_dir,
+        None => manifest_dir.clone(),
     };
-    let path = root.join(path);
-    fs::File::open(path)
+    let full_path = root_dir.join(path);
+    let file = fs::File::open(&full_path)?;
+    let display_path = {
+        // Canonicalize to resolve any `..` components; fall back to the
+        // unresolved paths if canonicalization fails (e.g., a race with
+        // deletion), which is acceptable since we already opened the file.
+        let canonical_full = fs::canonicalize(&full_path).unwrap_or_else(|_| full_path.clone());
+        let canonical_manifest =
+            fs::canonicalize(&manifest_dir).unwrap_or_else(|_| manifest_dir.clone());
+        let rel = canonical_full
+            .strip_prefix(&canonical_manifest)
+            .unwrap_or(std::path::Path::new(path));
+        rel.to_string_lossy().replace('\\', "/")
+    };
+    Ok((file, display_path))
 }
 
 fn extract<R, F>(buffer: R, name: &str, f: F) -> io::Result<(u32, String)>
