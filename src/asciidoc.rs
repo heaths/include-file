@@ -8,14 +8,19 @@ pub fn include_asciidoc(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>> {
+fn collect<R: io::Read>(
+    name: &str,
+    iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_block = false;
     let mut delimiter_checked = false;
     let mut use_delimiters = false;
+    let mut start_line: u32 = 0;
 
-    for line in iter {
+    for (line_idx, line) in iter.enumerate() {
         let line = line?;
+        let line_num = (line_idx + 1) as u32;
 
         if !in_block {
             // Look for a source block attribute line like [source,rust] or [,rust]
@@ -26,7 +31,8 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
                 // Check if it contains the matching id attribute
                 if has_matching_id(trimmed, name) {
                     in_block = true;
-                    // Next line will determine if we use delimiters
+                    start_line = line_num + 1; // adjusted below if a delimiter follows
+                                               // Next line will determine if we use delimiters
                 }
             }
         } else if !delimiter_checked {
@@ -34,6 +40,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
             delimiter_checked = true;
             if line.trim() == "----" {
                 use_delimiters = true;
+                start_line = line_num + 1; // content starts after ----
                 continue; // Don't collect the opening delimiter
             } else {
                 // Not using delimiters, check if this line should be collected
@@ -60,7 +67,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         }
     }
 
-    Ok(lines)
+    Ok((start_line, lines))
 }
 
 fn has_matching_id(line: &str, name: &str) -> bool {
@@ -130,7 +137,7 @@ fn main() {
 
 Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn main() {
@@ -152,7 +159,7 @@ fn test() {
 
 Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
@@ -172,7 +179,7 @@ let y = x + 1;
 This text should not be included.
 More text here."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let x = 42;
@@ -192,7 +199,7 @@ fn inline() {
 This text after the blank line should not be included.
 Neither should this."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn inline() {
@@ -226,7 +233,7 @@ And another one:
 System.out.println("Also not this one");
 ----"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn main() {
@@ -250,7 +257,7 @@ fn nested() {
 
 After the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"// Comment with ---- in it
@@ -272,7 +279,7 @@ fn with_attributes() {}
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, "fn with_attributes() {}");
     }
 
@@ -289,7 +296,7 @@ fn second() {}
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn first() {}
@@ -311,11 +318,29 @@ assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);
 
 Text after."####;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r###"let m = example()?;
 assert_eq!(format!("{m:?}"), r#"Model { name: "example" }"#);"###
         );
+    }
+
+    #[test]
+    fn extract_start_line_with_delimiters() {
+        // Attribute on line 3, ---- on line 4, first content on line 5.
+        let content = "Text.\n\n[,rust,id=\"example\"]\n----\nlet x = 1;\n----\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 5);
+    }
+
+    #[test]
+    fn extract_start_line_without_delimiters() {
+        // Attribute on line 3, first content line is line 4.
+        let content = "Text.\n\n[,rust,id=\"example\"]\nlet x = 1;\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 4);
     }
 }

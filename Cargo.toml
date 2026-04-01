@@ -22,10 +22,8 @@ textile = []
 
 [dependencies]
 proc-macro2 = { version = "1.0.103", features = ["span-locations"] }
-syn = "2.0.109"
-
-[dev-dependencies]
 quote = "1.0.42"
+syn = "2.0.109"
 
 [lints.clippy]
 test_attr_in_doctest = "allow"

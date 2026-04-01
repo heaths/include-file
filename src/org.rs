@@ -8,13 +8,18 @@ pub fn include_org(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>> {
+fn collect<R: io::Read>(
+    name: &str,
+    iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_block = false;
     let mut found_name = false;
+    let mut start_line: u32 = 0;
 
-    for line in iter {
+    for (line_idx, line) in iter.enumerate() {
         let line = line?;
+        let line_num = (line_idx + 1) as u32;
 
         if !in_block {
             let trimmed = line.trim();
@@ -34,6 +39,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
             {
                 in_block = true;
                 found_name = false;
+                start_line = line_num + 1;
             } else if found_name {
                 // Reset if we see any line that's not BEGIN_SRC after finding a name
                 // This ensures NAME must be immediately before BEGIN_SRC
@@ -55,7 +61,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         }
     }
 
-    Ok(lines)
+    Ok((start_line, lines))
 }
 
 fn has_matching_name(line: &str, name: &str) -> bool {
@@ -130,7 +136,7 @@ println!("hello, world!");
 
 Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("hello, world!");"#);
     }
 
@@ -147,7 +153,7 @@ fn test() {
 
 Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
@@ -174,7 +180,7 @@ println!("This is the one!");
 
 And another one."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("This is the one!");"#);
     }
 
@@ -190,7 +196,7 @@ And another one."#;
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"    let indented = "value";
@@ -211,7 +217,7 @@ fn second() {}
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn first() {}
@@ -231,7 +237,7 @@ struct Point {
     y: i32,
 }"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"struct Point {
@@ -296,7 +302,7 @@ println!("lowercase directives");
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("lowercase directives");"#);
     }
 
@@ -311,7 +317,16 @@ println!("mixed case");
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("mixed case");"#);
+    }
+
+    #[test]
+    fn extract_start_line() {
+        // #+NAME on line 3, #+BEGIN_SRC on line 4, first content on line 5.
+        let content = "Text.\n\n#+NAME: example\n#+BEGIN_SRC rust\nprintln!(\"hi\");\n#+END_SRC\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 5);
     }
 }

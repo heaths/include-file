@@ -22,7 +22,29 @@ fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// rust-analyzer does not implement Span::local_file(): https://github.com/rust-lang/rust-analyzer/issues/15950
+// Verify that two includes in the same function generate unique guard names.
+#[test]
+fn test_multiple_includes() -> Result<(), Box<dyn std::error::Error>> {
+    include_markdown!("README.md", "example", scope);
+    include_markdown!("README.md", "example", scope);
+    Ok(())
+}
+
+// Verify that when multiple guards coexist in the same scope (no `scope` keyword)
+// and a later snippet panics, only that snippet's guard prints the "note:" line.
+// Without the explicit drop() emitted after each body, all live guards would
+// unwind together and each would print a separate note, making it hard to
+// identify which snippet actually panicked.
+#[cfg(feature = "asciidoc")]
+#[test]
+#[should_panic(expected = "intentional assert failure")]
+fn test_only_one_note_on_panic() {
+    // First snippet succeeds; its guard is explicitly dropped right after.
+    include_asciidoc!("tests/README.adoc", "simple-assert");
+    // Second snippet panics; only this guard should print the "note:" line.
+    include_asciidoc!("tests/README.adoc", "assert-fail");
+}
+
 #[cfg_attr(not(span_locations), ignore = "not supported")]
 #[test]
 fn test_relative_markdown() -> Result<(), Box<dyn std::error::Error>> {
