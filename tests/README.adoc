@@ -43,14 +43,14 @@ fn test_example() -> Result<(), Box<dyn std::error::Error>> {
 }
 ----
 
-== License
-
-Licensed under the link:../LICENSE.txt[MIT] license.
-
-// Used by tests to verify that a panic in one snippet does not cause prior
-// guards to print an additional "note:" line.
 [,rust,id="simple-assert"]
 assert_eq!(1 + 1, 2);
 
+// Used by tests to verify that a panic in one snippet does not cause prior
+// guards to print an additional "note:" line.
 [,rust,id="assert-fail"]
 assert!(false, "intentional assert failure");
+
+== License
+
+Licensed under the link:../LICENSE.txt[MIT] license.
