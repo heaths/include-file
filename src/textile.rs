@@ -10,7 +10,10 @@ pub fn include_textile(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)> {
+fn collect<R: io::Read>(
+    name: &str,
+    iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_block = false;
     let mut is_double_period = false;

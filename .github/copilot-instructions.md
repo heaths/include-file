@@ -129,7 +129,7 @@ When adding support for a new documentation format:
 
 - `proc-macro2`: Token stream manipulation with span locations
 - `syn`: Parsing macro arguments
-- `quote`: Only in dev dependencies for tests
+- `quote`: Token stream quoting (regular dependency)
 
 ### Rust Version
 
@@ -140,7 +140,8 @@ This project requires Rust 1.85.0 or newer (see `rust-toolchain.toml`).
 - Draft PRs do not need to start with "[WIP]" prefix
 - If a PR title starts with "[WIP]", remove it once you're done resolving the request
 - Use simple, descriptive titles following git commit message conventions
-- Keep PR descriptions brief, summarizing the changes made
+- Keep PR descriptions brief and summarized, describing the overall purpose of the changes rather than listing every file modified
+- After making changes, always update the PR description to be a concise summary
 
 ## Example Workflow
 

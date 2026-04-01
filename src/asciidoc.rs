@@ -8,7 +8,10 @@ pub fn include_asciidoc(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)> {
+fn collect<R: io::Read>(
+    name: &str,
+    iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_block = false;
     let mut delimiter_checked = false;
@@ -29,7 +32,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
                 if has_matching_id(trimmed, name) {
                     in_block = true;
                     start_line = line_num + 1; // adjusted below if a delimiter follows
-                    // Next line will determine if we use delimiters
+                                               // Next line will determine if we use delimiters
                 }
             }
         } else if !delimiter_checked {

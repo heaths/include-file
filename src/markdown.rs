@@ -8,7 +8,10 @@ pub fn include_markdown(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)> {
+fn collect<R: io::Read>(
+    name: &str,
+    iter: io::Lines<io::BufReader<R>>,
+) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_fence = false;
     let mut fence_char = '\0';
@@ -298,7 +301,8 @@ Text after."#;
     #[test]
     fn extract_start_line_with_preceding_fences() {
         // The matching fence opens on line 9; first content line is line 10.
-        let content = "Text.\n\n```rust other\nfn a() {}\n```\n\nMore.\n\n```rust example\nlet x = 1;\n```\n";
+        let content =
+            "Text.\n\n```rust other\nfn a() {}\n```\n\nMore.\n\n```rust example\nlet x = 1;\n```\n";
         let cursor = io::Cursor::new(content);
         let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(start_line, 10);
