@@ -317,6 +317,11 @@ where
     let body: TokenStream = content.parse()?;
     let mut output = guard;
     output.extend(body);
+    // Explicitly drop the guard right after the included body so that, when
+    // multiple macros are used in the same scope, prior guards are already gone
+    // before the next snippet starts.  Without this, a panic in snippet N would
+    // unwind all N guards and print N "note:" lines instead of one.
+    output.extend(quote! { ::std::mem::drop(#guard_var); });
 
     if args.scope.is_some() {
         output = TokenTree::Group(Group::new(Delimiter::Brace, output)).into();
