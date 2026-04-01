@@ -14,11 +14,13 @@ mod tests;
 #[cfg(feature = "textile")]
 mod textile;
 
-use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, Group, Ident, Span, TokenStream, TokenTree};
+use quote::quote;
 use std::{
     env, fs,
     io::{self, BufRead},
     path::PathBuf,
+    sync::atomic::{AtomicU64, Ordering},
 };
 use syn::{
     parse::{Parse, ParseStream},
@@ -26,6 +28,8 @@ use syn::{
     spanned::Spanned,
     LitStr, Meta, Token,
 };
+
+static INCLUDE_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Include code from within a source block in an AsciiDoc file.
 ///
@@ -269,7 +273,7 @@ impl Parse for MarkdownArgs {
 
 fn include_file<F>(item: TokenStream, f: F) -> syn::Result<TokenStream>
 where
-    F: FnOnce(&str, io::Lines<io::BufReader<fs::File>>) -> io::Result<Vec<String>>,
+    F: FnOnce(&str, io::Lines<io::BufReader<fs::File>>) -> io::Result<(u32, Vec<String>)>,
 {
     let args: MarkdownArgs = parse2(item)?;
     let root = match args.relative {
@@ -281,15 +285,45 @@ where
     };
     let file =
         open(root, &args.path.value()).map_err(|err| syn::Error::new(args.path.span(), err))?;
-    let content = extract(file, &args.name.value(), f)
+    let (start_line, content) = extract(file, &args.name.value(), f)
         .map_err(|err| syn::Error::new(args.name.span(), err))?;
 
-    let mut content = content.parse()?;
+    let n = INCLUDE_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let guard_type = Ident::new(&format!("__IncludeFileGuard{n}"), Span::call_site());
+    let guard_var = Ident::new(&format!("__include_file_guard{n}"), Span::call_site());
+    let path_value = args.path.value();
+
+    let guard = quote! {
+        struct #guard_type {
+            file: &'static str,
+            line: u32,
+        }
+        impl ::std::ops::Drop for #guard_type {
+            fn drop(&mut self) {
+                if ::std::thread::panicking() {
+                    ::std::eprintln!(
+                        "note: panicked in code included from {}:{}",
+                        self.file,
+                        self.line
+                    );
+                }
+            }
+        }
+        let #guard_var = #guard_type {
+            file: #path_value,
+            line: #start_line,
+        };
+    };
+
+    let body: TokenStream = content.parse()?;
+    let mut output = guard;
+    output.extend(body);
+
     if args.scope.is_some() {
-        content = TokenTree::Group(Group::new(Delimiter::Brace, content)).into();
+        output = TokenTree::Group(Group::new(Delimiter::Brace, output)).into();
     }
 
-    Ok(content)
+    Ok(output)
 }
 
 fn open(root: Option<PathBuf>, path: &str) -> io::Result<fs::File> {
@@ -307,13 +341,13 @@ fn open(root: Option<PathBuf>, path: &str) -> io::Result<fs::File> {
     fs::File::open(path)
 }
 
-fn extract<R, F>(buffer: R, name: &str, f: F) -> io::Result<String>
+fn extract<R, F>(buffer: R, name: &str, f: F) -> io::Result<(u32, String)>
 where
     R: io::Read,
-    F: FnOnce(&str, io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>>,
+    F: FnOnce(&str, io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)>,
 {
     let reader = io::BufReader::new(buffer);
-    let lines = f(name, reader.lines())?;
+    let (start_line, lines) = f(name, reader.lines())?;
     if lines.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -321,5 +355,5 @@ where
         ));
     }
 
-    Ok(lines.join("\n"))
+    Ok((start_line, lines.join("\n")))
 }

@@ -8,15 +8,17 @@ pub fn include_markdown(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>> {
+fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_fence = false;
     let mut fence_char = '\0';
     let mut fence_count = 0;
     let mut fence_indent = 0;
+    let mut start_line: u32 = 0;
 
-    for line in iter {
+    for (line_idx, line) in iter.enumerate() {
         let line = line?;
+        let line_num = (line_idx + 1) as u32;
 
         if !in_fence {
             // Look for the start of a code fence
@@ -38,6 +40,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
                         fence_char = fence_ch;
                         fence_count = count;
                         fence_indent = indent;
+                        start_line = line_num + 1;
                     }
                 }
             }
@@ -72,7 +75,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         }
     }
 
-    Ok(lines)
+    Ok((start_line, lines))
 }
 
 #[cfg(test)]
@@ -129,7 +132,7 @@ And another one:
 print("Also not this one")
 ```"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn main() {
@@ -158,7 +161,7 @@ More content.
 
 After the fence."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn nested() {
@@ -179,7 +182,7 @@ After the fence."#;
 
 More text."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn indented() {
@@ -199,7 +202,7 @@ let y = x + 1;
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let x = 42;
@@ -219,7 +222,7 @@ fn hello() {
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn hello() {
@@ -240,7 +243,7 @@ fn test() {
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
@@ -260,7 +263,7 @@ let b = 2;
 
 Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let a = 1;
@@ -281,5 +284,23 @@ Text after."#;
         let cursor = io::Cursor::new(content);
         let result = extract(cursor, "example", collect);
         assert!(matches!(result, Err(err) if err.kind() == io::ErrorKind::NotFound));
+    }
+
+    #[test]
+    fn extract_start_line() {
+        // Opening fence is on line 3; first content line is line 4.
+        let content = "Text before.\n\n```rust example\nlet x = 42;\n```\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 4);
+    }
+
+    #[test]
+    fn extract_start_line_with_preceding_fences() {
+        // The matching fence opens on line 9; first content line is line 10.
+        let content = "Text.\n\n```rust other\nfn a() {}\n```\n\nMore.\n\n```rust example\nlet x = 1;\n```\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 10);
     }
 }

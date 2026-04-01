@@ -22,6 +22,14 @@ fn test_markdown() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// Verify that two includes in the same function generate unique guard names.
+#[test]
+fn test_multiple_includes() -> Result<(), Box<dyn std::error::Error>> {
+    include_markdown!("README.md", "example", scope);
+    include_markdown!("README.md", "example", scope);
+    Ok(())
+}
+
 // rust-analyzer does not implement Span::local_file(): https://github.com/rust-lang/rust-analyzer/issues/15950
 #[cfg_attr(not(span_locations), ignore = "not supported")]
 #[test]

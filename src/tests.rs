@@ -10,8 +10,8 @@ use syn::parse2;
 fn collect<R: io::Read>(
     _name: &str,
     _iter: io::Lines<io::BufReader<R>>,
-) -> io::Result<Vec<String>> {
-    Ok(vec![r#"println!("example");"#.into()])
+) -> io::Result<(u32, Vec<String>)> {
+    Ok((1, vec![r#"println!("example");"#.into()]))
 }
 
 #[test]

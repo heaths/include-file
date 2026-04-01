@@ -10,13 +10,15 @@ pub fn include_textile(item: TokenStream) -> syn::Result<TokenStream> {
     super::include_file(item, collect::<fs::File>)
 }
 
-fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<Vec<String>> {
+fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Result<(u32, Vec<String>)> {
     let mut lines = Vec::new();
     let mut in_block = false;
     let mut is_double_period = false;
+    let mut start_line: u32 = 0;
 
-    for line in iter {
+    for (line_idx, line) in iter.enumerate() {
         let line = line?;
+        let line_num = (line_idx + 1) as u32;
 
         if !in_block {
             // Look for a code block starting with bc(rust#name). or bc(rust#name)..
@@ -25,6 +27,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
 
             if trimmed.starts_with("bc") && has_matching_id(trimmed, name) {
                 is_double_period = trimmed.contains("..");
+                start_line = line_num; // content starts on this same line, after the bc directive
 
                 // Extract content after the first space on the same line
                 // Code MUST start on the same line in Textile
@@ -65,7 +68,7 @@ fn collect<R: io::Read>(name: &str, iter: io::Lines<io::BufReader<R>>) -> io::Re
         }
     }
 
-    Ok(lines)
+    Ok((start_line, lines))
 }
 
 fn has_matching_id(line: &str, name: &str) -> bool {
@@ -237,7 +240,7 @@ bc[rust](#example). println!("hello, world!");
 
 p. Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("hello, world!");"#);
     }
     #[test]
@@ -250,7 +253,7 @@ bc(#example)[rust].. fn test() {
 
 p. Text after the block."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
@@ -268,7 +271,7 @@ let y = x + 1;
 
 bq. This is a quote block that ends the code."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let x = 42;
@@ -288,7 +291,7 @@ bc(#example)[rust]. println!("This is the one!");
 
 p. And another one."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, r#"println!("This is the one!");"#);
     }
 
@@ -302,7 +305,7 @@ bc(rust#example).. fn with_content() {
 
 p. Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn with_content() {
@@ -319,7 +322,7 @@ bc[rust](#example). let value = 123;
 
 p. Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, "let value = 123;");
     }
 
@@ -332,7 +335,7 @@ bc(rust#example).. struct Point {
     y: i32,
 }"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"struct Point {
@@ -352,7 +355,7 @@ fn second() {}
 
 p. Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn first() {}
@@ -382,7 +385,7 @@ let y = 2;
 
 h1>. Right Aligned Header"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let x = 1;
@@ -400,7 +403,7 @@ bc(rust#example).. fn test() {
 
 p<>. Justified paragraph text."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
@@ -417,7 +420,7 @@ bc(rust#example).. let value = 42;
 
 h2=. Centered Header"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, "let value = 42;");
     }
 
@@ -431,7 +434,7 @@ bc(rust#example).. struct Point {
 
 p(. Indented paragraph."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"struct Point {
@@ -448,7 +451,7 @@ bc(rust#example).. let data = vec![1, 2, 3];
 
 table(myclass). Some table content"#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, "let data = vec![1, 2, 3];");
     }
 
@@ -462,7 +465,7 @@ bc(rust#example).. fn example() {
 
 notextile. Raw content here."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn example() {
@@ -479,7 +482,7 @@ bc[rust](#example). let value = 100;
 
 p. Text after."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(result, "let value = 100;");
     }
 
@@ -492,7 +495,7 @@ let y = 20;
 
 p))). Right padded paragraph."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"let x = 10;
@@ -510,12 +513,21 @@ bc(rust#example).. fn test() {
 
 p()). Left indent and right padding."#;
         let cursor = io::Cursor::new(content);
-        let result = extract(cursor, "example", collect).expect("expected content");
+        let (_, result) = extract(cursor, "example", collect).expect("expected content");
         assert_eq!(
             result,
             r#"fn test() {
     return 42;
 }"#
         );
+    }
+
+    #[test]
+    fn extract_start_line() {
+        // bc tag is on line 3; content starts on the same line.
+        let content = "Text.\n\nbc(rust#example). let x = 1;\n";
+        let cursor = io::Cursor::new(content);
+        let (start_line, _) = extract(cursor, "example", collect).expect("expected content");
+        assert_eq!(start_line, 3);
     }
 }
