@@ -292,9 +292,71 @@ where
     let guard_type = Ident::new(&format!("__IncludeFileGuard{n}"), Span::call_site());
     let guard_var = Ident::new(&format!("__include_file_guard{n}"), Span::call_site());
 
+    // Compute the file expression for the guard based on whether `relative` was passed.
+    // Use Location::caller().file() to resolve paths consistently with panic messages.
+    let file_expr: TokenStream = if args.relative.is_some() {
+        // Path is relative to the source file.
+        // Resolve against caller's directory and normalize.
+        let path_str = args.path.value();
+        quote! {
+            {
+                let __caller = ::std::panic::Location::caller().file();
+                let __caller_dir = ::std::path::Path::new(__caller)
+                    .parent()
+                    .unwrap_or(::std::path::Path::new(""));
+                let __resolved = __caller_dir.join(#path_str);
+                let mut __parts: ::std::vec::Vec<::std::path::Component<'_>> =
+                    ::std::vec::Vec::new();
+                for __c in __resolved.components() {
+                    match __c {
+                        ::std::path::Component::ParentDir => { __parts.pop(); }
+                        ::std::path::Component::CurDir => {}
+                        _ => __parts.push(__c),
+                    }
+                }
+                let __normalized: ::std::path::PathBuf = __parts.iter().collect();
+                __normalized.to_string_lossy().into_owned()
+            }
+        }
+    } else {
+        // Path is relative to CARGO_MANIFEST_DIR.
+        // Find the crate-relative portion of the caller path by testing
+        // progressively shorter suffixes against CARGO_MANIFEST_DIR. The
+        // prefix that remains is whatever the compiler prepended (e.g., a
+        // workspace-relative directory), which we prepend to display_path
+        // so the reported path matches what panic messages use.
+        let path_str = &display_path;
+        quote! {
+            {
+                let __caller = ::std::panic::Location::caller().file();
+                let __manifest = ::std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+                let __path: &str = #path_str;
+                let __caller_path = ::std::path::Path::new(__caller);
+                let __components: ::std::vec::Vec<::std::path::Component<'_>> =
+                    __caller_path.components().collect();
+                let mut __prefix_len = 0usize;
+                for __skip in 0..__components.len() {
+                    let __suffix: ::std::path::PathBuf =
+                        __components[__skip..].iter().collect();
+                    if __manifest.join(&__suffix).is_file() {
+                        __prefix_len = __skip;
+                        break;
+                    }
+                }
+                if __prefix_len == 0 {
+                    ::std::string::String::from(__path)
+                } else {
+                    let __prefix: ::std::path::PathBuf =
+                        __components[..__prefix_len].iter().collect();
+                    __prefix.join(__path).to_string_lossy().into_owned()
+                }
+            }
+        }
+    };
+
     let guard = quote! {
         struct #guard_type {
-            file: &'static str,
+            file: ::std::string::String,
             line: u32,
         }
         impl ::std::ops::Drop for #guard_type {
@@ -309,7 +371,7 @@ where
             }
         }
         let #guard_var = #guard_type {
-            file: #display_path,
+            file: #file_expr,
             line: #start_line,
         };
     };
@@ -353,7 +415,7 @@ fn open(root: Option<PathBuf>, path: &str) -> io::Result<(fs::File, String)> {
         let rel = canonical_full
             .strip_prefix(&canonical_manifest)
             .unwrap_or(std::path::Path::new(path));
-        rel.to_string_lossy().replace('\\', "/")
+        rel.to_string_lossy().into_owned()
     };
     Ok((file, display_path))
 }

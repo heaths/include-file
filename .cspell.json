@@ -15,6 +15,7 @@
     "docsrs",
     "doctest",
     "mkdn",
+    "nocapture",
     "repr",
     "rustc",
     "rustlang",

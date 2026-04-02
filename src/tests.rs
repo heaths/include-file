@@ -181,7 +181,11 @@ fn open_err() {
 fn display_path_without_relative() {
     // Without `relative`, the user-supplied path is already relative to CARGO_MANIFEST_DIR.
     let (_, display_path) = open(None, "tests/README.adoc").expect("expected tests/README.adoc");
-    assert_eq!(display_path, "tests/README.adoc");
+    if cfg!(windows) {
+        assert_eq!(display_path, "tests\\README.adoc");
+    } else {
+        assert_eq!(display_path, "tests/README.adoc");
+    }
 }
 
 #[test]
@@ -191,5 +195,9 @@ fn display_path_with_relative() {
     // tests/readme.rs: the note should still report "tests/README.adoc".
     let src = PathBuf::from("tests/readme.rs");
     let (_, display_path) = open(Some(src), "README.adoc").expect("expected tests/README.adoc");
-    assert_eq!(display_path, "tests/README.adoc");
+    if cfg!(windows) {
+        assert_eq!(display_path, "tests\\README.adoc");
+    } else {
+        assert_eq!(display_path, "tests/README.adoc");
+    }
 }

@@ -11,6 +11,10 @@ rust-version = "1.85.0"
 repository = "https://github.com/heaths/include-file"
 license = "MIT"
 
+[workspace]
+members = ["tests/member"]
+exclude = ["tests/non-member"]
+
 [lib]
 proc-macro = true
 
