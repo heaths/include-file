@@ -1,0 +1,9 @@
+$schema: https://raw.githubusercontent.com/DavidAnson/markdownlint-cli2/v0.21.0/schema/markdownlint-cli2-config-schema.json
+gitignore: true
+globs:
+  - "**/*.md"
+config:
+  first-line-h1: false
+  line-length: false
+  ol-prefix:
+    style: ordered
