@@ -5,7 +5,7 @@
   "ignorePaths": [
     ".cspell.json",
     ".devcontainer/",
-    ".github/",
+    ".github/workflows/",
     ".vscode/",
     "rust-toolchain.toml"
   ],
@@ -15,6 +15,7 @@
     "docsrs",
     "doctest",
     "mkdn",
+    "newformat",
     "nocapture",
     "repr",
     "rustc",
