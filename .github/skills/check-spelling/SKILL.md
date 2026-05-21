@@ -1,43 +1,25 @@
 ---
 name: check-spelling
-description: Check and fix spelling in project source files using cSpell
+description: Run before marking any request complete if docs, comments, or text content changed. Use when checking or fixing spelling errors.
 ---
 
-# Spell checking
+# Check Spelling
 
-## Installation and usage
+Install: `npm i`
 
-Run `npm install` from the repository root to install `cspell` from `devDependencies` in the root `package.json`. Then run `npx cspell <command>` to use the locally installed version.
+Check changed files:
 
-## Configuration
-
-The cSpell configuration is in `.cspell.json` at the repository root. When running any cspell command, pass `--config .cspell.json`.
-
-The configuration has the following structure:
-
-- `words`: array of accepted words applied repo-wide.
-- `overrides`: array of per-glob overrides, each with a `filename` glob and its own `words` array.
-- `ignorePaths`: array of paths excluded from spell checking.
-
-## Check spelling
-
-Run `npx cspell lint --config .cspell.json .` to check spelling across the repository.
-
-## Fix spelling
-
-Show a summary of the misspelling to the user. Prompt the user for which words should be replaced with another word.
-
-Add remaining words to `.cspell.json`:
-
-- If a word appears only in files matching an existing override `filename` glob, add it to that override's `words` array.
-- Otherwise, add it to the top-level `words` array.
-
-Seldom used words can be ignored within the file they appear by adding an inline comment:
-
-```rust
-// cspell:ignore <word>
+```bash
+git diff --name-only --diff-filter=d HEAD | npx cspell lint --config .cspell.json --file-list stdin
 ```
 
-## Testing
+Auto-fix obvious misspellings:
 
-Run the same command again used to check spelling. All misspellings should be fixed.
+```bash
+git diff --name-only --diff-filter=d HEAD | npx cspell lint --config .cspell.json --fix --file-list stdin
+```
+
+- Unknown words: ask whether to correct the spelling or add to the nearest config
+- **Finding the config**: walk up ancestor directories looking for `.cspell.json`, then `cspell.json` in each directory; if you reach the git root without finding one, also check `.vscode/cspell.json`
+- **Adding words**: edit the config file directly — add to the `words` array (general terms) or `dictionaryDefinitions[name="crates"].words` (Rust crates)
+- Verify after adding words: rerun the check command

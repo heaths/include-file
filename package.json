@@ -1,6 +1,10 @@
 {
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "devDependencies": {
     "cspell": "^9.7.0",
     "markdownlint-cli2": "^0.21.0"
-  }
+  },
+  "private": true
 }
