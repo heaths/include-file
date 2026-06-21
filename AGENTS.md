@@ -44,10 +44,10 @@ Run all checks before completing any task:
 
 2. **Check spelling** — use the **check-spelling** skill after modifying any source files, documentation,
    or adding new identifiers that may not be in the dictionary:
-   - **check-spelling**: [Check and fix spelling in project source files using cSpell](.github/skills/check-spelling/SKILL.md)
+   - **check-spelling**: [Check and fix spelling in project source files using cSpell](.agents/skills/check-spelling/SKILL.md)
 
 3. **Lint Markdown files** — use the **lint-markdown** skill after creating or modifying any `.md` files:
-   - **lint-markdown**: [Check and fix formatting and other issues in markdown files using markdownlint-cli2](.github/skills/lint-markdown/SKILL.md)
+   - **lint-markdown**: [Check and fix formatting and other issues in markdown files using markdownlint-cli2](.agents/skills/lint-markdown/SKILL.md)
 
 When both a repository skill and a plugin skill could handle the same task, always prefer the repository skill.
 
